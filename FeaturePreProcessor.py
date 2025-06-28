@@ -48,19 +48,19 @@ class FeaturePreProcessor:
     def cleandata(self, df: pd.DataFrame, dropna=True) -> pd.DataFrame:
         datatypes = self.determinedatatype(df)
         tempdf = df.copy()
-        tempdf.replace(["Error", "na", "NA", "ERROR", "error", "err", "ERR", "NAType", "natype", "UNKNOWN", "unknown"], pd.NA, inplace=True)
-        for col in tempdf.columns:
-            if not tempdf[col].isnull().any():
-                continue
-            elif dropna:
-                tempdf.dropna(subset=[col], inplace=True)
-                booleandf = df[col].isin(["Error", "na", "NA", "ERROR", "error", "err", "ERR"])
-                tempdf = tempdf[tempdf[booleandf] == True]
-            elif datatypes[col] in ["numeric", "price", "percentage"]:
-                imputer = KNNImputer(n_neighbors=3)
-                tempdf[col] = imputer.fit_transform(tempdf[[col]]).flatten()
-            elif datatypes[col] in ["string", "temporal", "unknown", "binary"]:
-                tempdf.dropna(subset=[col], inplace=True)
+        tempdf.replace(["Error", "na", "NA", "ERROR", "error", "err", "ERR", "NAType", "natype", "UNKNOWN", "unknown", ""], np.nan, inplace=True)
+        if dropna:
+            tempdf.dropna(how='any', inplace=True)
+        else:
+            for col in tempdf.columns:
+                if not tempdf[col].isnull().any():
+                    continue
+                elif datatypes[col] in ["numeric", "price", "percentage"]:
+                    imputer = KNNImputer(n_neighbors=3)
+                    tempdf[col] = imputer.fit_transform(tempdf[[col]]).flatten()
+                elif datatypes[col] in ["string", "temporal", "unknown", "binary"]:
+                    tempdf.dropna(subset=[col], inplace=True)
+
         tempdf.index = range(len(tempdf))
         return tempdf
 
@@ -88,7 +88,10 @@ if __name__ == "__main__":
         'description': ['Product A', np.nan, 'Product C', 'Product D', 'Product E']
     }
 
-    df = pd.read_csv(r"C:\Users\erikh\PycharmProjects\FeaturePreProcessor\dirty_cafe_sales.csv")
+    df = pd.read_csv(r"C:\Users\erikh\PycharmProjects\FeaturePreProcessor\retail_store_sales.csv")
     newdf = FeaturePreProcessor().cleandata(df, dropna=False)
-    print(FeaturePreProcessor().determinedatatype(newdf))
-    print(newdf)
+    newnewdf = FeaturePreProcessor().cleandata(newdf, dropna=True)
+    print(df)
+    print(FeaturePreProcessor().cleandata(df, dropna=True))
+    print(newnewdf)
+    #newdf.to_csv("test.csv", index=False)
