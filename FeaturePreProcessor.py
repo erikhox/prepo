@@ -1,7 +1,21 @@
 import pandas as pd
 import numpy as np
 from dateutil.parser import parse
+from scipy.stats import iqr
 from sklearn.impute import KNNImputer
+from sklearn.preprocessing import StandardScaler
+
+def robustscaler(df: pd.DataFrame) -> None:
+    for col in df.columns:
+        df[col].apply(lambda x: (x - df[col].min()) / iqr(df[col]))
+
+def minmaxscaler(df: pd.DataFrame) -> None:
+    for col in df.columns:
+        df[col].apply(lambda x: (x - df[col].min()) / df[col].max() - df[col].min())
+
+def standarsscaler(df: pd.DataFrame) -> None:
+    for col in df.columns:
+        df[col].apply(lambda x: (x - df[col].mean) / df[col].std())
 
 class FeaturePreProcessor:
     def __init__(self):
@@ -93,5 +107,5 @@ if __name__ == "__main__":
     newnewdf = FeaturePreProcessor().cleandata(newdf, dropna=True)
     print(df)
     print(FeaturePreProcessor().cleandata(df, dropna=True))
-    print(newnewdf)
+    print(newnewdf["Price Per Unit"])
     #newdf.to_csv("test.csv", index=False)
