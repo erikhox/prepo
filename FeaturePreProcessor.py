@@ -3,13 +3,12 @@ import numpy as np
 from dateutil.parser import parse
 from scipy.stats import iqr
 from sklearn.impute import KNNImputer
-from sklearn.decomposition import PCA
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple
 
 
 class FeaturePreProcessor:
     """
-    A comprehensive feature preprocessing class for data cleaning, scaling, and transformation.
+    A feature preprocessing class for data cleaning, scaling, and transformation.
     """
 
     def __init__(self):
@@ -54,6 +53,20 @@ class FeaturePreProcessor:
     def _is_string(self, value) -> bool:
         """Check if a value is a string."""
         return isinstance(value, str)
+
+    def clean_outliers(self, df: pd.DataFrame, dt: Dict[str, str]) -> pd.DataFrame:
+        newdf = df.copy()
+
+        for col in df.columns:
+            if any(word in col.lower() for word in ["id", "tag", "identification", "item"]):
+                continue
+            if dt[col] in ["price", "numeric", "percentage"]:
+                iqrv = iqr(newdf[col])
+                q1 = newdf[col].quantile(0.25)
+                q3 = newdf[col].quantile(0.75)
+                newdf = newdf[newdf[col].between(q1-1.5*iqrv, q3+1.5*iqrv)]
+
+        return newdf
 
     def is_timeseries(self, df: pd.DataFrame) -> bool:
         """
@@ -183,10 +196,15 @@ class FeaturePreProcessor:
 
         # Scale numeric columns
         for col in clean_df.columns:
+            if any(word in col.lower() for word in ["id", "tag", "identification", "item"]):
+                continue
             if datatypes[col] in ["price", "numeric", "percentage"]:
                 clean_df[col] = scaler_func(clean_df[col])
 
         return clean_df
+
+    def process(self):
+        '''temp'''
 
 if __name__ == "__main__":
     data = {
@@ -202,7 +220,7 @@ if __name__ == "__main__":
     }
 
     processor = FeaturePreProcessor()
-    df = pd.read_csv(r"C:\Users\erikh\PycharmProjects\FeaturePreProcessor\retail_store_sales.csv")
+    df = pd.read_csv(r"C:\Users\erikh\PycharmProjects\FeaturePreProcessor\listings.csv")
     normalized = processor.scale_features(df, drop_na=False, scaler_type="standard")
 
     print(normalized)
