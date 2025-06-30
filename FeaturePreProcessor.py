@@ -10,13 +10,13 @@ class FeaturePreProcessor:
         pass
 
     def robustscaler(self, df: pd.DataFrame) -> pd.DataFrame:
-        return df.apply(lambda x: (x - df.min()) / iqr(df))
+        return (df - df.min()) / iqr(df)
 
     def minmaxscaler(self, df: pd.DataFrame) -> pd.DataFrame:
-        return df.apply(lambda x: (x - df.min()) / df.max() - df.min())
+        return (df - df.min()) / (df.max() - df.min())
 
     def standardscaler(self, df: pd.DataFrame) -> pd.DataFrame:
-        return df.apply(lambda x: (x - df.mean()) / df.std())
+        return df - df.mean() / df.std()
 
     def is_date(self, value):
         if pd.isna(value) or not isinstance(value, str):
@@ -35,28 +35,29 @@ class FeaturePreProcessor:
 
     def determinedatatype(self, df: pd.DataFrame) -> dict:
         datatypes = {}
-        for col in df.head(100).columns:
+        smdf = df.head(100)
+        for col in smdf.columns:
             if any(word in col.lower() for word in ["date", "time"]):
                 datatypes[col] = "temporal"
-            elif df[col].apply(self.is_date).all():
+            elif smdf[col].apply(self.is_date).all():
                 datatypes[col] = "temporal"
-            elif df[col].unique().size == 2:
+            elif smdf[col].unique().size == 2:
                 datatypes[col] = "binary"
-            elif pd.api.types.is_any_real_numeric_dtype(df[col]) and any(word in col.lower() for word in ["perc", "rating", "percentage", "percent", "%", "score"]):
+            elif pd.api.types.is_any_real_numeric_dtype(smdf[col]) and any(word in col.lower() for word in ["perc", "rating", "percentage", "percent", "%", "score"]):
                 datatypes[col] = "percentage"
             elif any(word in col.lower() for word in ["price", "revenue", '$', '€', '£', '¥', '₹', '₽', '₩', '₪', '₦', '₡', '¢', '₨', '₱']):
                 datatypes[col] = "price"
-            elif df[col].dtype == "int64" or df[col].dtype == "float64":
+            elif smdf[col].dtype == "int64" or smdf[col].dtype == "float64":
                 datatypes[col] = "numeric"
-            elif (df[col].nunique() / len(df) < 0.5 and (df[col].dtype == "object" or df[col].dtype == "string")) or any(word in col.lower() for word in ["category", "categories"]):
+            elif (df[col].nunique() / len(df) < 0.5 and (smdf[col].dtype == "object" or smdf[col].dtype == "string")) or any(word in col.lower() for word in ["category", "categories"]):
                 datatypes[col] = "categorical"
-            elif df[col].apply(self.is_string).all():
+            elif smdf[col].dtype == "string":
                 datatypes[col] = "string"
             else:
                 datatypes[col] = "unknown"
         return datatypes
 
-    def cleandata(self, df: pd.DataFrame, dropna=True) -> pd.DataFrame:
+    def cleandata(self, df: pd.DataFrame, dropna=True) -> tuple[pd.DataFrame, dict]:
         datatypes = self.determinedatatype(df)
         tempdf = df.copy()
         tempdf.replace(["Error", "na", "NA", "ERROR", "error", "err", "ERR", "NAType", "natype", "UNKNOWN", "unknown", ""], np.nan, inplace=True)
@@ -73,7 +74,7 @@ class FeaturePreProcessor:
                     tempdf.dropna(subset=[col], inplace=True)
 
         tempdf.index = range(len(tempdf))
-        return tempdf
+        return tempdf, datatypes
 
     def istimeseries(self, df: pd.DataFrame) -> bool:
         datatypes = self.determinedatatype(df)
@@ -86,8 +87,10 @@ class FeaturePreProcessor:
         else:
             return False
 
-    def scaler(self, df: pd.DataFrame, func=0) -> pd.DataFrame:
-        datatypes = self.determinedatatype(df)
+    def scaler(self, df: pd.DataFrame, dropna=True, func=0) -> pd.DataFrame:
+        cleandatares = self.cleandata(df, dropna=dropna)
+        data = cleandatares[0]
+        datatypes = cleandatares[1]
         function = None
 
         if func == 0:
@@ -99,7 +102,6 @@ class FeaturePreProcessor:
         else:
             raise ValueError("Invalid function")
 
-        data = df.copy()
         for col in data.columns:
             if datatypes[col] in ["price", "numeric"]:
                 data[col] = function(data[col])
@@ -124,9 +126,6 @@ if __name__ == "__main__":
 
     processor = FeaturePreProcessor()
     df = pd.read_csv(r"C:\Users\erikh\PycharmProjects\FeaturePreProcessor\retail_store_sales.csv")
-    cleaned = processor.cleandata(df, dropna=True)
-    datatypes = processor.determinedatatype(cleaned)
-    isTimeseries = processor.istimeseries(df)
-    normalized = processor.scaler(cleaned, 0)
+    normalized = processor.scaler(df, dropna=True, func=0)
 
     print(normalized)
