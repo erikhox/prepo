@@ -3,7 +3,6 @@ import numpy as np
 from dateutil.parser import parse
 from scipy.stats import iqr
 from sklearn.impute import KNNImputer
-from sklearn.preprocessing import StandardScaler
 
 def robustscaler(df: pd.DataFrame) -> None:
     for col in df.columns:
