@@ -4,21 +4,19 @@ from dateutil.parser import parse
 from scipy.stats import iqr
 from sklearn.impute import KNNImputer
 
-def robustscaler(df: pd.DataFrame) -> None:
-    for col in df.columns:
-        df[col].apply(lambda x: (x - df[col].min()) / iqr(df[col]))
-
-def minmaxscaler(df: pd.DataFrame) -> None:
-    for col in df.columns:
-        df[col].apply(lambda x: (x - df[col].min()) / df[col].max() - df[col].min())
-
-def standarsscaler(df: pd.DataFrame) -> None:
-    for col in df.columns:
-        df[col].apply(lambda x: (x - df[col].mean) / df[col].std())
 
 class FeaturePreProcessor:
     def __init__(self):
         pass
+
+    def robustscaler(self, df: pd.DataFrame) -> pd.DataFrame:
+        return df.apply(lambda x: (x - df.min()) / iqr(df))
+
+    def minmaxscaler(self, df: pd.DataFrame) -> pd.DataFrame:
+        return df.apply(lambda x: (x - df.min()) / df.max() - df.min())
+
+    def standardscaler(self, df: pd.DataFrame) -> pd.DataFrame:
+        return df.apply(lambda x: (x - df.mean()) / df.std())
 
     def is_date(self, value):
         if pd.isna(value) or not isinstance(value, str):
@@ -37,23 +35,23 @@ class FeaturePreProcessor:
 
     def determinedatatype(self, df: pd.DataFrame) -> dict:
         datatypes = {}
-        for col in df.columns:
+        for col in df.head(100).columns:
             if any(word in col.lower() for word in ["date", "time"]):
                 datatypes[col] = "temporal"
             elif df[col].apply(self.is_date).all():
                 datatypes[col] = "temporal"
             elif df[col].unique().size == 2:
                 datatypes[col] = "binary"
-            elif pd.api.types.is_any_real_numeric_dtype(df[col]) and (df[col].between(0,1).all() or any(word in col.lower() for word in ["perc", "per", "rating", "percentage", "percent", "%"])):
+            elif pd.api.types.is_any_real_numeric_dtype(df[col]) and any(word in col.lower() for word in ["perc", "rating", "percentage", "percent", "%", "score"]):
                 datatypes[col] = "percentage"
             elif any(word in col.lower() for word in ["price", "revenue", '$', '€', '£', '¥', '₹', '₽', '₩', '₪', '₦', '₡', '¢', '₨', '₱']):
                 datatypes[col] = "price"
             elif df[col].dtype == "int64" or df[col].dtype == "float64":
                 datatypes[col] = "numeric"
+            elif (df[col].nunique() / len(df) < 0.5 and (df[col].dtype == "object" or df[col].dtype == "string")) or any(word in col.lower() for word in ["category", "categories"]):
+                datatypes[col] = "categorical"
             elif df[col].apply(self.is_string).all():
                 datatypes[col] = "string"
-            elif df[col].nunique() / len(df) < 0.5 and (df[col].dtype == "object" or df[col].dtype == "string"):
-                datatypes[col] = "categorical"
             else:
                 datatypes[col] = "unknown"
         return datatypes
@@ -88,6 +86,29 @@ class FeaturePreProcessor:
         else:
             return False
 
+    def scaler(self, df: pd.DataFrame, func=0) -> pd.DataFrame:
+        datatypes = self.determinedatatype(df)
+        function = None
+
+        if func == 0:
+            function = self.standardscaler
+        elif func == 1:
+            function = self.robustscaler
+        elif func == 2:
+            function = self.minmaxscaler
+        else:
+            raise ValueError("Invalid function")
+
+        data = df.copy()
+        for col in data.columns:
+            if datatypes[col] in ["price", "numeric"]:
+                data[col] = function(data[col])
+            else:
+                continue
+
+        return data
+
+
 if __name__ == "__main__":
     data = {
         'date_column': ['2023-01-01', '2023-01-02', np.nan, '2023-01-04', '2023-01-05'],
@@ -101,10 +122,11 @@ if __name__ == "__main__":
         'description': ['Product A', np.nan, 'Product C', 'Product D', 'Product E']
     }
 
+    processor = FeaturePreProcessor()
     df = pd.read_csv(r"C:\Users\erikh\PycharmProjects\FeaturePreProcessor\retail_store_sales.csv")
-    newdf = FeaturePreProcessor().cleandata(df, dropna=False)
-    newnewdf = FeaturePreProcessor().cleandata(newdf, dropna=True)
-    print(df)
-    print(FeaturePreProcessor().cleandata(df, dropna=True))
-    print(newnewdf["Price Per Unit"])
-    #newdf.to_csv("test.csv", index=False)
+    cleaned = processor.cleandata(df, dropna=True)
+    datatypes = processor.determinedatatype(cleaned)
+    isTimeseries = processor.istimeseries(df)
+    normalized = processor.scaler(cleaned, 0)
+
+    print(normalized)
