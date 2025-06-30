@@ -7,9 +7,6 @@ from typing import Dict, Tuple
 
 
 class FeaturePreProcessor:
-    """
-    A feature preprocessing class for data cleaning, scaling, and transformation.
-    """
 
     def __init__(self):
         self.scalers = {
@@ -178,33 +175,49 @@ class FeaturePreProcessor:
         clean_df = clean_df.reset_index(drop=True)
         return clean_df, datatypes
 
-    def scale_features(self, df: pd.DataFrame, drop_na: bool = True, scaler_type: str = 'standard') -> pd.DataFrame:
+    def scaler(self, df: pd.DataFrame, scaler_type: str = 'standard', datatypes: Dict[str, str] = None):
+        '''
+        scales the features using the specified scaler type
+        args:
+            :param df: cleaned dataframe to scale
+            :param scaler_type: type of scaler to use (standard, robust, minmax)
+            :param datatypes: datatypes of dataframe
+        returns:
+            scaled dataframe
+        '''
+        scaler_func = self.scalers[scaler_type]
+
+        for col in df.columns:
+            if any(word in col.lower() for word in ["id", "tag", "identification", "item"]):
+                continue
+            if datatypes[col] in ["price", "numeric", "percentage"]:
+                df[col] = scaler_func(df[col])
+
+    def process(self, df: pd.DataFrame, drop_na: bool = True, scaler_type: str = 'standard', remove_outlier: bool = True) -> pd.DataFrame:
         """
         Clean and scale numeric features in the dataframe.
         Args:
             df: DataFrame to process
             drop_na: Whether to drop NA values during cleaning
             scaler_type: Type of scaler to use ('standard', 'robust', 'minmax')
+            remove_outlier: Choose to remove outliers or not
         Returns:
             Scaled DataFrame
         """
         if scaler_type not in self.scalers:
             raise ValueError(f"Unknown scaler type: {scaler_type}. Available: {list(self.scalers.keys())}")
 
+        #get cleaned data set
         clean_df, datatypes = self.clean_data(df, drop_na=drop_na)
-        scaler_func = self.scalers[scaler_type]
+
+        #remove outliers if wanted
+        if remove_outlier:
+            clean_df = self.clean_outliers(clean_df, datatypes)
 
         # Scale numeric columns
-        for col in clean_df.columns:
-            if any(word in col.lower() for word in ["id", "tag", "identification", "item"]):
-                continue
-            if datatypes[col] in ["price", "numeric", "percentage"]:
-                clean_df[col] = scaler_func(clean_df[col])
+        self.scaler(clean_df, scaler_type, datatypes)
 
         return clean_df
-
-    def process(self):
-        '''temp'''
 
 if __name__ == "__main__":
     data = {
@@ -220,7 +233,7 @@ if __name__ == "__main__":
     }
 
     processor = FeaturePreProcessor()
-    df = pd.read_csv(r"C:\Users\erikh\PycharmProjects\FeaturePreProcessor\listings.csv")
-    normalized = processor.scale_features(df, drop_na=False, scaler_type="standard")
+    df = pd.read_csv(r"/csv/messy_numerical_data.csv")
+    normalized = processor.process(df, drop_na=False, scaler_type="standard", remove_outlier=True)
 
     print(normalized)
