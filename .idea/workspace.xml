@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7f2ecfc3-b281-4bd6-a829-f84149edd2ef" name="Changes" comment="prototype 1">
+    <list default="true" id="7f2ecfc3-b281-4bd6-a829-f84149edd2ef" name="Changes" comment="optimized">
+      <change afterPath="$PROJECT_DIR$/winequality-red.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/winequality-white.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FeaturePreProcessor.py" beforeDir="false" afterPath="$PROJECT_DIR$/FeaturePreProcessor.py" afterDir="false" />
     </list>
@@ -111,7 +113,15 @@
       <option name="project" value="LOCAL" />
       <updated>1751291709385</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="optimized">
+      <option name="closed" value="true" />
+      <created>1751293057400</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1751293057400</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -121,9 +131,10 @@
     <MESSAGE value="test" />
     <MESSAGE value="second day 10:05, fixing cleaning data" />
     <MESSAGE value="prototype 1" />
-    <option name="LAST_COMMIT_MESSAGE" value="prototype 1" />
+    <MESSAGE value="optimized" />
+    <option name="LAST_COMMIT_MESSAGE" value="optimized" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/FeaturePreProcessor$FeaturePreProcessor.coverage" NAME="FeaturePreProcessor Coverage Results" MODIFIED="1751292421703" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/FeaturePreProcessor$FeaturePreProcessor.coverage" NAME="FeaturePreProcessor Coverage Results" MODIFIED="1751308780165" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
