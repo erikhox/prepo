@@ -1,4 +1,4 @@
-# FeaturePreProcessor
+# Prepo
 
 A Python package for preprocessing pandas DataFrames, with a focus on automatic data type detection, cleaning, and scaling.
 
@@ -13,14 +13,14 @@ A Python package for preprocessing pandas DataFrames, with a focus on automatic 
 ## Installation
 
 ```bash
-pip install -e .
+pip install prepo
 ```
 
 ## Usage
 
 ```python
 import pandas as pd
-from feature_preprocessor import FeaturePreProcessor
+from prepo import FeaturePreProcessor
 
 # Create a processor instance
 processor = FeaturePreProcessor()
@@ -58,19 +58,20 @@ The package automatically detects the following data types:
 ## Project Structure
 
 ```
-feature_preprocessor/
+prepo/
 ├── data/               # Data directory
 │   ├── raw/            # Raw data files
 │   ├── processed/      # Processed data files
 │   └── test/           # Test data files
 ├── src/                # Source code
-│   └── feature_preprocessor/  # Main package
+│   └── prepo/          # Main package
 │       ├── __init__.py        # Package initialization
-│       ├── preprocessor.py    # Core preprocessing functionality
-│       └── data_generator.py  # Utilities for generating test data
+│       └── preprocessor.py    # Core preprocessing functionality
 ├── tests/              # Test directory
 │   ├── __init__.py     # Test package initialization
 │   └── test_preprocessor.py  # Tests for preprocessor
+├── examples/           # Example scripts
+│   └── basic_usage.py  # Basic usage example
 ├── README.md           # Project documentation
 ├── LICENSE             # License information
 └── setup.py            # Package installation script

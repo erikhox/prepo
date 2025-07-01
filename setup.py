@@ -4,14 +4,14 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="feature-preprocessor",
+    name="prepo",
     version="0.1.0",
     author="Erik Hoxhaj",
     author_email="erik.hoxhaj@outlook.com",
     description="A package for preprocessing pandas DataFrames",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/erikhox/feature-preprocessor",
+    url="https://github.com/erikhox/prepo",
     package_dir={"": "src"},
     packages=find_packages(where="src"),
     classifiers=[
@@ -36,9 +36,9 @@ setup(
         ],
     },
     project_urls={
-        "Bug Reports": "https://github.com/erikhox/FeaturePreProcessor/issues",
-        "Source": "https://github.com/erikhox/FeaturePreProcessor",
-        "Documentation": "https://github.com/erikhox/FeaturePreProcessor#readme",
+        "Bug Reports": "https://github.com/erikhox/prepo/issues",
+        "Source": "https://github.com/erikhox/prepo",
+        "Documentation": "https://github.com/erikhox/prepo#readme",
     },
     keywords="pandas preprocessing data-science feature-engineering",
 
