@@ -232,3 +232,5 @@ cython_debug/
 data/processed/*.csv
 data/test/generated_*.csv
 test.csv
+.gitignore
+.idea
