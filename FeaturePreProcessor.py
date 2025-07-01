@@ -12,7 +12,8 @@ class FeaturePreProcessor:
         self.scalers = {
             'standard': self._standard_scaler,
             'robust': self._robust_scaler,
-            'minmax': self._minmax_scaler
+            'minmax': self._minmax_scaler,
+            'none': None
         }
 
     def _robust_scaler(self, series: pd.Series) -> pd.Series:
@@ -82,46 +83,76 @@ class FeaturePreProcessor:
             Dictionary mapping column names to their inferred data types
         """
         datatypes = {}
-        # Use sample of data for efficiency
-        sample_df = df.head(min(100, len(df.index)))
+        sample_size = min(1000, len(df.index))
+        sample_df = df.sample(sample_size, random_state=42) if sample_size > 100 else df
+
+        # Precompute column properties for efficiency
+        column_properties = {}
+        for col in sample_df.columns:
+            series = sample_df[col]
+            column_properties[col] = {
+                'is_numeric': pd.api.types.is_numeric_dtype(series),
+                'nunique': series.nunique(),
+                'nunique_ratio': series.nunique() / len(sample_df) if len(sample_df) > 0 else 0,
+                'col_lower': col.lower(),
+                'na_count': series.isna().sum()
+            }
 
         for col in sample_df.columns:
-            col_lower = col.lower()
+            props = column_properties[col]
             series = sample_df[col]
+            col_lower = props['col_lower']
 
-            # Check for temporal data
-            if any(word in col_lower for word in ["date", "time"]):
+            # temporal
+            if any(word in col_lower for word in ["date", "time", "year", "month", "day"]):
+                datatypes[col] = "temporal"
+            elif pd.api.types.is_datetime64_any_dtype(series):
                 datatypes[col] = "temporal"
             elif series.dropna().apply(self._is_date).all() and not series.dropna().empty:
                 datatypes[col] = "temporal"
 
-            # Check for binary data
-            elif series.nunique() == 2:
+            # binary
+            elif props['nunique'] == 2:
                 datatypes[col] = "binary"
 
-            # Check for percentage data
-            elif (pd.api.types.is_numeric_dtype(series) and
-                  any(word in col_lower for word in ["perc", "rating", "percentage", "percent", "%", "score"])):
+            # percentage
+            elif props['is_numeric'] and (
+                    any(word in col_lower for word in
+                        ["perc", "rating", "percentage", "percent", "%", "score", "ratio"]) or
+                    (series.dropna().between(0, 1).mean() > 0.9 and "rate" in col_lower)
+            ):
                 datatypes[col] = "percentage"
 
-            # Check for price/currency data
-            elif any(word in col_lower for word in
-                     ["price", "revenue", '$', '€', '£', '¥', '₹', '₽', '₩', '₪', '₦', '₡', '¢', '₨', '₱']):
+            # price/currency
+            elif props['is_numeric'] and any(word in col_lower for word in
+                                             ["price", "cost", "revenue", "sales", "income", "expense",
+                                              '$', '€', '£', '¥', '₹', '₽', '₩', '₪', '₦', '₡', '¢', '₨', '₱']):
                 datatypes[col] = "price"
 
-            # Check for numeric data
-            elif pd.api.types.is_numeric_dtype(series):
-                datatypes[col] = "numeric"
+            # ID columns
+            elif props['is_numeric'] and (col_lower.endswith('id') or col_lower.startswith('id')):
+                datatypes[col] = "id"
 
-            # Check for categorical data
-            elif ((series.nunique() / len(df) < 0.5 and pd.api.types.is_object_dtype(series)) or
-                  any(word in col_lower for word in ["category", "categories"])):
+            # numeric
+            elif props['is_numeric']:
+                if series.dropna().apply(lambda x: float(x).is_integer()).all():
+                    datatypes[col] = "integer"
+                else:
+                    datatypes[col] = "numeric"
+
+            # categorical
+            elif ((props['nunique_ratio'] < 0.2 and pd.api.types.is_object_dtype(series)) or
+                  any(word in col_lower for word in ["category", "categories", "type", "group"])):
                 datatypes[col] = "categorical"
 
-            # Check for string data
+            # string
             elif pd.api.types.is_string_dtype(series) or pd.api.types.is_object_dtype(series):
-                datatypes[col] = "string"
+                if series.dropna().str.len().mean() > 100:
+                    datatypes[col] = "text"
+                else:
+                    datatypes[col] = "string"
 
+            # unknown
             else:
                 datatypes[col] = "unknown"
 
@@ -152,7 +183,7 @@ class FeaturePreProcessor:
                 if not clean_df[col].isnull().any():
                     continue
 
-                if datatypes[col] in ["numeric", "price", "percentage"]:
+                if datatypes[col] in ["numeric", "price", "percentage", "integer"]:
                     # Use KNN imputation for numeric data
                     if clean_df[col].notna().sum() >= 3:  # Need at least 3 values for KNN
                         imputer = KNNImputer(n_neighbors=min(3, clean_df[col].notna().sum()))
@@ -186,6 +217,9 @@ class FeaturePreProcessor:
             scaled dataframe
         '''
         scaler_func = self.scalers[scaler_type]
+
+        if scaler_func is None:
+            return
 
         for col in df.columns:
             if any(word in col.lower() for word in ["id", "tag", "identification", "item"]):
@@ -233,7 +267,7 @@ if __name__ == "__main__":
     }
 
     processor = FeaturePreProcessor()
-    df = pd.read_csv(r"/csv/messy_numerical_data.csv")
+    df = pd.DataFrame(data)
     normalized = processor.process(df, drop_na=False, scaler_type="standard", remove_outlier=True)
-
+    normalized.to_csv("test.csv", index=False)
     print(normalized)
