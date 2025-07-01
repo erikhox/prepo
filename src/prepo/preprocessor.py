@@ -72,6 +72,23 @@ class FeaturePreProcessor:
 
         return success_rate > 0.6
 
+    def _is_percentage_range(self, series):
+        '''checks if a numeric series is a percentage'''
+        try:
+            numeric_data = pd.to_numeric(series, errors='coerce')
+            clean_numeric = numeric_data.dropna()
+
+            if len(clean_numeric) == 0:
+                return False
+
+            in_range = clean_numeric.between(0, 1)
+            percentage_in_range = in_range.mean()
+
+            return percentage_in_range > 0.9
+
+        except Exception:
+            return False
+
     def _is_date(self, value) -> bool:
         """Check if a value can be parsed as a date."""
         if pd.isna(value) or not isinstance(value, str):
@@ -159,7 +176,7 @@ class FeaturePreProcessor:
             # percentage
             elif (any(word in col_lower for word in
                       ["perc", "rating", "percentage", "percent", "%", "score", "ratio"]) or
-                  (props['is_numeric'] and series.dropna().between(0, 1).mean() > 0.9)):
+                  (props['is_numeric'] and self._is_percentage_range(series))):
                 datatypes[col] = "percentage"
 
             # price/currency
