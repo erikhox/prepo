@@ -54,6 +54,21 @@ class FeaturePreProcessor:
             return series - mean_val
         return (series - mean_val) / std_val
 
+    def _is_numeric(self, series):
+        '''Check if a series contains numeric strings.'''
+        if pd.api.types.is_numeric_dtype(series):
+            return True
+
+        sample = series.dropna().astype(str)
+        if len(sample) > 1000:
+            sample = sample.sample(1000)
+
+        try:
+            pd.to_numeric(sample, errors='raise')
+            return True
+        except (ValueError, TypeError):
+            return False
+
     def _is_date(self, value) -> bool:
         """Check if a value can be parsed as a date."""
         if pd.isna(value) or not isinstance(value, str):
@@ -107,15 +122,6 @@ class FeaturePreProcessor:
         return temporal_count == 1
 
     def determine_datatypes(self, df: pd.DataFrame) -> Dict[str, str]:
-        """
-        Determine the data type of each column in the dataframe.
-
-        Args:
-            df: DataFrame to analyze
-
-        Returns:
-            Dictionary mapping column names to their inferred data types
-        """
         datatypes = {}
         sample_size = min(1000, len(df.index))
         sample_df = df.sample(sample_size, random_state=42) if sample_size > 100 else df
@@ -125,9 +131,9 @@ class FeaturePreProcessor:
         for col in sample_df.columns:
             series = sample_df[col]
             column_properties[col] = {
-                'is_numeric': pd.api.types.is_numeric_dtype(series),
+                'is_numeric': self._is_numeric(series),
                 'nunique': series.nunique(),
-                'nunique_ratio': series.value_counts(1),
+                'nunique_ratio': series.value_counts(normalize=True),
                 'col_lower': col.lower(),
                 'na_count': series.isna().sum()
             }
@@ -148,12 +154,9 @@ class FeaturePreProcessor:
                 datatypes[col] = "binary"
 
             # percentage
-            elif props['is_numeric'] and (
-                    any(word in col_lower for word in
-                        ["perc", "rating", "percentage", "percent", "%", "score", "ratio"]) or
-                    (series.dropna().between(0, 1).mean() > 0.9 and any(word in col_lower for word in
-                        ["perc", "rating", "percentage", "percent", "%", "score", "ratio"]))
-            ):
+            elif (any(word in col_lower for word in
+                      ["perc", "rating", "percentage", "percent", "%", "score", "ratio"]) or
+                  (props['is_numeric'] and series.dropna().between(0, 1).mean() > 0.9)):
                 datatypes[col] = "percentage"
 
             # price/currency
@@ -162,18 +165,14 @@ class FeaturePreProcessor:
                                               '$', '€', '£', '¥', '₹', '₽', '₩', '₪', '₦', '₡', '¢', '₨', '₱']):
                 datatypes[col] = "price"
 
-            # ID columns
-            elif any(word in col_lower for word in
-                     ["id", "tag", "identification", "item", "code", "serial", "key", "key_id"]
-                     ):
-                datatypes[col] = "id"
-
             # numeric
             elif props['is_numeric']:
-                if series.dropna().apply(lambda x: float(x).is_integer()).all():
-                    datatypes[col] = "integer"
-                else:
-                    datatypes[col] = "numeric"
+                datatypes[col] = "numeric"
+
+            # ID columns
+            elif any(word in col_lower for word in
+                     ["id", "tag", "identification", "serial", "key"]):
+                datatypes[col] = "id"
 
             # string
             elif pd.api.types.is_string_dtype(series) or pd.api.types.is_object_dtype(series):
@@ -213,7 +212,7 @@ class FeaturePreProcessor:
                 if not clean_df[col].isnull().any():
                     continue
 
-                if datatypes[col] in ["numeric", "price", "percentage", "integer"]:
+                if datatypes[col] in ["numeric", "price", "percentage"]:
                     if clean_df[col].notna().sum() >= 3:  # Need at least 3 values for KNN
                         imputer = KNNImputer(n_neighbors=min(3, clean_df[col].notna().sum()))
                         clean_df[col] = imputer.fit_transform(clean_df[[col]]).flatten()
