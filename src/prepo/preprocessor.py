@@ -55,7 +55,7 @@ class FeaturePreProcessor:
         return (series - mean_val) / std_val
 
     def _is_numeric(self, series):
-        '''Check if a series contains numeric strings.'''
+        '''Check if a series contains mostly numeric data.'''
         if pd.api.types.is_numeric_dtype(series):
             return True
 
@@ -63,11 +63,14 @@ class FeaturePreProcessor:
         if len(sample) > 1000:
             sample = sample.sample(1000)
 
-        try:
-            pd.to_numeric(sample, errors='raise')
-            return True
-        except (ValueError, TypeError):
+        if len(sample) == 0:
             return False
+
+        converted = pd.to_numeric(sample, errors='coerce')
+
+        success_rate = converted.notna().sum() / len(sample)
+
+        return success_rate > 0.6
 
     def _is_date(self, value) -> bool:
         """Check if a value can be parsed as a date."""
