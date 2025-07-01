@@ -4,12 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7f2ecfc3-b281-4bd6-a829-f84149edd2ef" name="Changes" comment="Final work before next step">
-      <change afterPath="$PROJECT_DIR$/csv/vgsales.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="7f2ecfc3-b281-4bd6-a829-f84149edd2ef" name="Changes" comment="big clean up">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FeaturePreProcessor.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/creating file.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -126,7 +123,7 @@
       <workItem from="1751046432702" duration="22724000" />
       <workItem from="1751150235450" duration="2517000" />
       <workItem from="1751376094469" duration="1373000" />
-      <workItem from="1751378608077" duration="6192000" />
+      <workItem from="1751378608077" duration="6548000" />
     </task>
     <task id="LOCAL-00001" summary="test">
       <option name="closed" value="true" />
@@ -192,7 +189,31 @@
       <option name="project" value="LOCAL" />
       <updated>1751380326576</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="big clean up">
+      <option name="closed" value="true" />
+      <created>1751395486902</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1751395486902</updated>
+    </task>
+    <task id="LOCAL-00010" summary="big clean up">
+      <option name="closed" value="true" />
+      <created>1751395494235</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1751395494235</updated>
+    </task>
+    <task id="LOCAL-00011" summary="big clean up">
+      <option name="closed" value="true" />
+      <created>1751395542696</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1751395542696</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -207,7 +228,8 @@
     <MESSAGE value="created outlier remover" />
     <MESSAGE value="cleaned up more" />
     <MESSAGE value="Final work before next step" />
-    <option name="LAST_COMMIT_MESSAGE" value="Final work before next step" />
+    <MESSAGE value="big clean up" />
+    <option name="LAST_COMMIT_MESSAGE" value="big clean up" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/FeaturePreProcessor$setup.coverage" NAME="setup Coverage Results" MODIFIED="1751394871239" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

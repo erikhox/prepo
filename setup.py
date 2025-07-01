@@ -19,7 +19,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.8",
     install_requires=[
         "pandas>=1.0.0",
         "numpy>=1.18.0",
@@ -34,5 +34,12 @@ setup(
             "flake8>=3.8.0",
             "black>=20.8b1",
         ],
-    }
+    },
+    project_urls={
+        "Bug Reports": "https://github.com/erikhox/FeaturePreProcessor/issues",
+        "Source": "https://github.com/erikhox/FeaturePreProcessor",
+        "Documentation": "https://github.com/erikhox/FeaturePreProcessor#readme",
+    },
+    keywords="pandas preprocessing data-science feature-engineering",
+
 )
