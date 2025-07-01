@@ -225,6 +225,10 @@ class FeaturePreProcessor:
                        "NAType", "natype", "UNKNOWN", "unknown", ""]
         clean_df = clean_df.replace(null_values, np.nan)
 
+        for col in clean_df.columns:
+            if datatypes[col] in ["numeric", "price", "percentage"]:
+                clean_df[col] = pd.to_numeric(clean_df[col], errors='coerce')
+
         if drop_na:
             clean_df = clean_df.dropna(how='any')
         else:
