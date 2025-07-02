@@ -1,7 +1,3 @@
-"""
-Basic usage example for the prepo package.
-"""
-
 import pandas as pd
 import numpy as np
 from src.prepo import FeaturePreProcessor

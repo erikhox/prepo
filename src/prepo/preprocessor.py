@@ -16,12 +16,6 @@ from typing import Dict, Tuple
 class FeaturePreProcessor:
     """
     A class for preprocessing pandas DataFrames.
-
-    This class provides methods for:
-    - Determining data types of DataFrame columns
-    - Cleaning data (handling missing values)
-    - Removing outliers
-    - Scaling numeric features
     """
 
     def __init__(self):
@@ -127,21 +121,16 @@ class FeaturePreProcessor:
 
         return newdf
 
-    def is_timeseries(self, df: pd.DataFrame) -> bool:
+    def determine_datatypes(self, df: pd.DataFrame) -> Dict[str, str]:
         """
-        Determine if the dataframe represents a time series (has exactly one temporal column).
+        Determine the data type of each column in the dataframe.
 
         Args:
-            df: DataFrame to analyze
+            df: DataFrame to find data types
 
         Returns:
-            True if the dataframe is a time series, False otherwise
+            dictionary mapping column names to their inferred data types
         """
-        datatypes = self.determine_datatypes(df)
-        temporal_count = sum(1 for dtype in datatypes.values() if dtype == "temporal")
-        return temporal_count == 1
-
-    def determine_datatypes(self, df: pd.DataFrame) -> Dict[str, str]:
         datatypes = {}
         sample_size = min(1000, len(df.index))
         sample_df = df.sample(sample_size, random_state=42) if sample_size > 100 else df
