@@ -2,14 +2,6 @@
 
 A Python package for preprocessing pandas DataFrames, with a focus on automatic data type detection, cleaning, and scaling.
 
-## Features
-
-- **Automatic Data Type Detection**: Automatically identifies column types (numeric, categorical, temporal, etc.)
-- **Data Cleaning**: Handles missing values, standardizes null representations
-- **Outlier Removal**: Identifies and removes outliers from numeric columns
-- **Feature Scaling**: Supports multiple scaling methods (standard, robust, minmax)
-- **Time Series Detection**: Identifies if a DataFrame represents time series data
-
 ## Installation
 
 ```bash
@@ -50,8 +42,6 @@ The package automatically detects the following data types:
 - **price**: Columns with names containing "price", "cost", "revenue", etc.
 - **id**: Columns with names ending or starting with "id"
 - **numeric**: General numeric columns
-- **integer**: Numeric columns with integer values
-- **categorical**: Columns with a low ratio of unique values to total values
 - **string**: Short text columns
 - **text**: Long text columns
 
@@ -76,6 +66,9 @@ prepo/
 ├── LICENSE             # License information
 └── setup.py            # Package installation script
 ```
+
+## Demo
+[preposc.streamlit.app](https://preposc.streamlit.app/)
 
 ## License
 
