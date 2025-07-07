@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from src.prepo import FeaturePreProcessor
+from pathlib import Path
 
 def main():
     """
@@ -48,19 +49,23 @@ def main():
     print("\nProcessed DataFrame shape:", processed_df.shape)
 
     # Save processed data
-    processed_df.to_csv("../data/processed/example_processed.csv", index=False)
+    file_path = Path("../data/processed/example_processed.csv")
+    processed_df.to_csv(file_path, index=False)
     print("\nProcessed data saved to ../data/processed/example_processed.csv")
 
     # Load and process a real dataset
     try:
         print("\nLoading and processing a real dataset...")
-        real_df = pd.read_csv("../data/raw/winequality-white.csv", sep=";")
+
+        file_path = Path("../data/raw/winequality-white.csv")
+        real_df = pd.read_csv(file_path, sep=";")
         print("Original dataset shape:", real_df.shape)
 
         processed_real_df = processor.process(real_df, drop_na=True, scaler_type='standard', remove_outlier=True)
         print("Processed dataset shape:", processed_real_df.shape)
 
-        processed_real_df.to_csv("../data/processed/winequality-white-processed.csv", index=False)
+        file_path = Path("../data/processed/winequality-white-processed.csv")
+        processed_real_df.to_csv(file_path, index=False)
         print("Processed data saved to ../data/processed/winequality-white-processed.csv")
     except Exception as e:
         print(f"Error processing real dataset: {e}")

@@ -12,8 +12,17 @@ from scipy.stats import iqr
 from sklearn.impute import KNNImputer
 from typing import Dict, Tuple
 
-
 class FeaturePreProcessor:
+    class ENUM:
+        string = "string"
+        numeric = "numeric"
+        percentage = "percentage"
+        price = "price"
+        binary = "binary"
+        temporal = "temporal"
+        id = "id"
+        text = "text"
+        unknown = "unknown"
     """
     A class for preprocessing pandas DataFrames.
     """
@@ -113,7 +122,7 @@ class FeaturePreProcessor:
         for col in df.columns:
             if any(word in col.lower() for word in ["id", "tag", "identification", "item"]):
                 continue
-            if dt[col] in ["price", "numeric", "percentage"]:
+            if dt[col] in [self.ENUM.price, self.ENUM.numeric, self.ENUM.percentage]:
                 iqrv = iqr(newdf[col])
                 q1 = newdf[col].quantile(0.25)
                 q3 = newdf[col].quantile(0.75)
@@ -154,45 +163,45 @@ class FeaturePreProcessor:
 
             # temporal
             if any(word in col_lower for word in ["date", "time", "year", "month", "day"]):
-                datatypes[col] = "temporal"
+                datatypes[col] = self.ENUM.temporal
             elif series.dropna().apply(self._is_date).all() and not series.dropna().empty:
-                datatypes[col] = "temporal"
+                datatypes[col] = self.ENUM.temporal
 
             # binary
             elif props['nunique'] == 2:
-                datatypes[col] = "binary"
+                datatypes[col] = self.ENUM.binary
 
             # percentage
             elif (any(word in col_lower for word in
                       ["perc", "rating", "percentage", "percent", "%", "score", "ratio"]) or
                   (props['is_numeric'] and self._is_percentage_range(series))):
-                datatypes[col] = "percentage"
+                datatypes[col] = self.ENUM.percentage
 
             # price/currency
             elif props['is_numeric'] and any(word in col_lower for word in
                                              ["price", "cost", "revenue", "sales", "income", "expense",
                                               '$', '€', '£', '¥', '₹', '₽', '₩', '₪', '₦', '₡', '¢', '₨', '₱']):
-                datatypes[col] = "price"
+                datatypes[col] = self.ENUM.price
 
             # numeric
             elif props['is_numeric']:
-                datatypes[col] = "numeric"
+                datatypes[col] = self.ENUM.numeric
 
             # ID columns
             elif any(word in col_lower for word in
                      ["id", "tag", "identification", "serial", "key"]):
-                datatypes[col] = "id"
+                datatypes[col] = self.ENUM.id
 
             # string
             elif pd.api.types.is_string_dtype(series) or pd.api.types.is_object_dtype(series):
                 if series.dropna().str.len().mean() > 100:
-                    datatypes[col] = "text"
+                    datatypes[col] = self.ENUM.text
                 else:
-                    datatypes[col] = "string"
+                    datatypes[col] = self.ENUM.string
 
             # unknown
             else:
-                datatypes[col] = "unknown"
+                datatypes[col] = self.ENUM.unknown
 
         return datatypes
 
@@ -215,7 +224,7 @@ class FeaturePreProcessor:
         clean_df = clean_df.replace(null_values, np.nan)
 
         for col in clean_df.columns:
-            if datatypes[col] in ["numeric", "price", "percentage"]:
+            if datatypes[col] in [self.ENUM.numeric, self.ENUM.price, self.ENUM.percentage]:
                 clean_df[col] = pd.to_numeric(clean_df[col], errors='coerce')
 
         if drop_na:
@@ -225,7 +234,7 @@ class FeaturePreProcessor:
                 if not clean_df[col].isnull().any():
                     continue
 
-                if datatypes[col] in ["numeric", "price", "percentage"]:
+                if datatypes[col] in [self.ENUM.numeric, self.ENUM.price, self.ENUM.percentage]:
                     if clean_df[col].notna().sum() >= 3:  # Need at least 3 values for KNN
                         imputer = KNNImputer(n_neighbors=min(3, clean_df[col].notna().sum()))
                         clean_df[col] = imputer.fit_transform(clean_df[[col]]).flatten()
@@ -258,7 +267,7 @@ class FeaturePreProcessor:
         for col in df.columns:
             if any(word in col.lower() for word in ["id", "tag", "identification", "item"]):
                 continue
-            if datatypes[col] in ["price", "numeric", "percentage"]:
+            if datatypes[col] in [self.ENUM.price, self.ENUM.numeric, self.ENUM.percentage]:
                 df[col] = scaler_func(df[col])
 
     def process(self, df: pd.DataFrame, drop_na: bool = True, scaler_type: str = 'standard', remove_outlier: bool = True) -> pd.DataFrame:
