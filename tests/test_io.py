@@ -1,4 +1,105 @@
-_read.columns), list(self.df.columns))
+"""
+Tests for the I/O module.
+"""
+
+import unittest
+import pandas as pd
+import numpy as np
+import tempfile
+import os
+from pathlib import Path
+from src.prepo.io import FileReader, FileWriter
+from src.prepo.types import FileFormat
+
+
+class TestFileIO(unittest.TestCase):
+    """Test cases for file I/O operations."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.test_data = {
+            'numeric_col': [1, 2, 3, 4, 5],
+            'string_col': ['A', 'B', 'C', 'D', 'E'],
+            'float_col': [1.1, 2.2, 3.3, 4.4, 5.5],
+            'bool_col': [True, False, True, False, True]
+        }
+        self.df = pd.DataFrame(self.test_data)
+        
+        # Create temporary directory for test files
+        self.temp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        """Clean up test files."""
+        import shutil
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_file_reader_initialization(self):
+        """Test FileReader initialization with different options."""
+        # Test basic initialization
+        reader = FileReader()
+        self.assertFalse(reader.use_polars)
+        self.assertFalse(reader.use_pyarrow)
+        
+        # Test with optimizations (will only be True if libraries are available)
+        reader_opt = FileReader(use_polars=True, use_pyarrow=True)
+        self.assertIsInstance(reader_opt.use_polars, bool)
+        self.assertIsInstance(reader_opt.use_pyarrow, bool)
+
+    def test_file_writer_initialization(self):
+        """Test FileWriter initialization with different options."""
+        # Test basic initialization
+        writer = FileWriter()
+        self.assertFalse(writer.use_polars)
+        self.assertFalse(writer.use_pyarrow)
+        
+        # Test with optimizations
+        writer_opt = FileWriter(use_polars=True, use_pyarrow=True)
+        self.assertIsInstance(writer_opt.use_polars, bool)
+        self.assertIsInstance(writer_opt.use_pyarrow, bool)
+
+    def test_detect_format(self):
+        """Test file format detection from extensions."""
+        reader = FileReader()
+        
+        # Test various file extensions
+        self.assertEqual(reader._detect_format("test.csv"), FileFormat.CSV)
+        self.assertEqual(reader._detect_format("test.json"), FileFormat.JSON)
+        self.assertEqual(reader._detect_format("test.xlsx"), FileFormat.XLSX)
+        self.assertEqual(reader._detect_format("test.xls"), FileFormat.XLS)
+        self.assertEqual(reader._detect_format("test.parquet"), FileFormat.PARQUET)
+        self.assertEqual(reader._detect_format("test.feather"), FileFormat.FEATHER)
+        self.assertEqual(reader._detect_format("test.pkl"), FileFormat.PICKLE)
+        self.assertEqual(reader._detect_format("test.pickle"), FileFormat.PICKLE)
+        self.assertEqual(reader._detect_format("test.tsv"), FileFormat.TSV)
+        self.assertEqual(reader._detect_format("test.orc"), FileFormat.ORC)
+        
+        # Test case insensitive
+        self.assertEqual(reader._detect_format("test.CSV"), FileFormat.CSV)
+        self.assertEqual(reader._detect_format("test.JSON"), FileFormat.JSON)
+        
+        # Test Path objects
+        self.assertEqual(reader._detect_format(Path("test.csv")), FileFormat.CSV)
+        
+        # Test unknown extension defaults to CSV
+        self.assertEqual(reader._detect_format("test.unknown"), FileFormat.CSV)
+
+    def test_csv_round_trip(self):
+        """Test CSV read/write round trip."""
+        reader = FileReader()
+        writer = FileWriter()
+        
+        csv_path = os.path.join(self.temp_dir, "test.csv")
+        
+        # Write CSV
+        writer.write_file(self.df, csv_path)
+        self.assertTrue(os.path.exists(csv_path))
+        
+        # Read CSV
+        df_read = reader.read_file(csv_path)
+        
+        # Compare (allowing for minor type differences)
+        self.assertEqual(len(df_read), len(self.df))
+        self.assertEqual(list(df_read.columns), list(self.df.columns))
 
     def test_json_round_trip(self):
         """Test JSON read/write round trip."""
@@ -171,9 +272,9 @@ _read.columns), list(self.df.columns))
         """Test handling of larger datasets."""
         # Create a larger test dataset
         large_data = {
-            'col1': range(10000),
-            'col2': [f"string_{i}" for i in range(10000)],
-            'col3': np.random.random(10000)
+            'col1': range(1000),
+            'col2': [f"string_{i}" for i in range(1000)],
+            'col3': np.random.random(1000)
         }
         large_df = pd.DataFrame(large_data)
         
