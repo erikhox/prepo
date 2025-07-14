@@ -12,9 +12,9 @@ from typing import Optional
 
 import pandas as pd
 
-from .preprocessor import FeaturePreProcessor
 from .io import FileReader, FileWriter
-from .types import ScalerType, FileFormat
+from .preprocessor import FeaturePreProcessor
+from .types import FileFormat, ScalerType
 
 
 def create_parser() -> argparse.ArgumentParser:

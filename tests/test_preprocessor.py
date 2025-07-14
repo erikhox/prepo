@@ -2,14 +2,15 @@
 Comprehensive tests for the prepo package.
 """
 
-import unittest
-import pandas as pd
-import numpy as np
-from pathlib import Path
-import tempfile
 import os
+import tempfile
+import unittest
+from pathlib import Path
 
-from src.prepo import FeaturePreProcessor, DataType, ScalerType
+import numpy as np
+import pandas as pd
+
+from src.prepo import DataType, FeaturePreProcessor, ScalerType
 
 
 class TestFeaturePreProcessor(unittest.TestCase):

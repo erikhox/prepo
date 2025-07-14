@@ -5,7 +5,7 @@ This module contains type-safe enumerations for data types and scaling methods.
 """
 
 from enum import Enum, auto
-from typing import Union, List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional, Union
 
 
 class DataType(Enum):

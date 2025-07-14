@@ -5,10 +5,12 @@ This module provides functionality to read and write data from various file form
 including CSV, JSON, Excel, Parquet, and more with optional Polars/PyArrow optimizations.
 """
 
-import pandas as pd
-import numpy as np
 from pathlib import Path
-from typing import Union, Dict, Any, Optional
+from typing import Any, Dict, Optional, Union
+
+import numpy as np
+import pandas as pd
+
 from .types import FileFormat
 
 # Optional high-performance libraries

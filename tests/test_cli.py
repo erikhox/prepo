@@ -2,16 +2,17 @@
 Tests for the CLI module.
 """
 
-import unittest
-import pandas as pd
-import tempfile
 import os
 import sys
+import tempfile
+import unittest
 from io import StringIO
-from unittest.mock import patch, MagicMock
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
-from src.prepo.cli import create_parser, validate_args, process_file, main
+import pandas as pd
+
+from src.prepo.cli import create_parser, main, process_file, validate_args
 
 
 class TestCLI(unittest.TestCase):

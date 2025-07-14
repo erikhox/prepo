@@ -3,7 +3,8 @@ Tests for the types module.
 """
 
 import unittest
-from src.prepo.types import DataType, ScalerType, FileFormat
+
+from src.prepo.types import DataType, FileFormat, ScalerType
 
 
 class TestDataTypes(unittest.TestCase):

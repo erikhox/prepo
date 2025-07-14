@@ -14,10 +14,10 @@ Features:
 - Modular architecture for programmatic and command-line usage
 """
 
-from .preprocessor import FeaturePreProcessor
-from .types import DataType, ScalerType, FileFormat, DataTypeDict
-from .io import FileReader, FileWriter
 from .cli import main as cli_main
+from .io import FileReader, FileWriter
+from .preprocessor import FeaturePreProcessor
+from .types import DataType, DataTypeDict, FileFormat, ScalerType
 
 __version__ = "0.2.0"
 __all__ = [
