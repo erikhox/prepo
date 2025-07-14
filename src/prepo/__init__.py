@@ -21,12 +21,12 @@ from .cli import main as cli_main
 
 __version__ = "0.2.0"
 __all__ = [
-    'FeaturePreProcessor',
-    'DataType', 
-    'ScalerType',
-    'FileFormat',
-    'DataTypeDict',
-    'FileReader',
-    'FileWriter',
-    'cli_main'
+    "FeaturePreProcessor",
+    "DataType",
+    "ScalerType",
+    "FileFormat",
+    "DataTypeDict",
+    "FileReader",
+    "FileWriter",
+    "cli_main",
 ]

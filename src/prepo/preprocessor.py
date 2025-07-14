@@ -16,6 +16,7 @@ from .types import DataType, ScalerType, DataTypeDict
 # Optional high-performance libraries
 try:
     import polars as pl
+
     HAS_POLARS = True
 except ImportError:
     pl = None
@@ -23,6 +24,7 @@ except ImportError:
 
 try:
     import pyarrow as pa
+
     HAS_PYARROW = True
 except ImportError:
     pa = None
@@ -33,7 +35,7 @@ class FeaturePreProcessor:
     """
     A class for preprocessing pandas DataFrames with automated data type detection,
     KNN imputation, outlier removal, and multiple scaling methods.
-    
+
     Features:
     - Automated data type detection using type-safe enums
     - KNN imputation for missing values
@@ -45,19 +47,19 @@ class FeaturePreProcessor:
     def __init__(self, use_polars: bool = False, use_pyarrow: bool = False):
         """
         Initialize the FeaturePreProcessor.
-        
+
         Args:
             use_polars: Use Polars for high-performance operations if available
             use_pyarrow: Use PyArrow for optimized I/O operations if available
         """
         self.use_polars = use_polars and HAS_POLARS
         self.use_pyarrow = use_pyarrow and HAS_PYARROW
-        
+
         self.scalers = {
             ScalerType.STANDARD: self._standard_scaler,
             ScalerType.ROBUST: self._robust_scaler,
             ScalerType.MINMAX: self._minmax_scaler,
-            ScalerType.NONE: None
+            ScalerType.NONE: None,
         }
 
     def _robust_scaler(self, series: pd.Series) -> pd.Series:
@@ -83,7 +85,7 @@ class FeaturePreProcessor:
         return (series - mean_val) / std_val
 
     def _is_numeric(self, series):
-        '''Check if a series contains mostly numeric data.'''
+        """Check if a series contains mostly numeric data."""
         if pd.api.types.is_numeric_dtype(series):
             return True
 
@@ -94,16 +96,16 @@ class FeaturePreProcessor:
         if len(sample) == 0:
             return False
 
-        converted = pd.to_numeric(sample, errors='coerce')
+        converted = pd.to_numeric(sample, errors="coerce")
 
         success_rate = converted.notna().sum() / len(sample)
 
         return success_rate > 0.6
 
     def _is_percentage_range(self, series):
-        '''checks if a numeric series is a percentage'''
+        """checks if a numeric series is a percentage"""
         try:
-            numeric_data = pd.to_numeric(series, errors='coerce')
+            numeric_data = pd.to_numeric(series, errors="coerce")
             clean_numeric = numeric_data.dropna()
 
             if len(clean_numeric) == 0:
@@ -151,7 +153,7 @@ class FeaturePreProcessor:
                 iqrv = iqr(newdf[col])
                 q1 = newdf[col].quantile(0.25)
                 q3 = newdf[col].quantile(0.75)
-                newdf = newdf[newdf[col].between(q1-1.5*iqrv, q3+1.5*iqrv)]
+                newdf = newdf[newdf[col].between(q1 - 1.5 * iqrv, q3 + 1.5 * iqrv)]
 
         return newdf
 
@@ -174,17 +176,17 @@ class FeaturePreProcessor:
         for col in sample_df.columns:
             series = sample_df[col]
             column_properties[col] = {
-                'is_numeric': self._is_numeric(series),
-                'nunique': series.nunique(),
-                'nunique_ratio': series.value_counts(normalize=True),
-                'col_lower': col.lower(),
-                'na_count': series.isna().sum()
+                "is_numeric": self._is_numeric(series),
+                "nunique": series.nunique(),
+                "nunique_ratio": series.value_counts(normalize=True),
+                "col_lower": col.lower(),
+                "na_count": series.isna().sum(),
             }
 
         for col in sample_df.columns:
             props = column_properties[col]
             series = sample_df[col]
-            col_lower = props['col_lower']
+            col_lower = props["col_lower"]
 
             # temporal
             if any(word in col_lower for word in ["date", "time", "year", "month", "day"]):
@@ -193,36 +195,57 @@ class FeaturePreProcessor:
                 datatypes[col] = DataType.TEMPORAL
 
             # binary
-            elif props['nunique'] == 2:
+            elif props["nunique"] == 2:
                 datatypes[col] = DataType.BINARY
 
             # percentage
-            elif (any(word in col_lower for word in
-                      ["perc", "rating", "percentage", "percent", "%", "score", "ratio"]) or
-                  (props['is_numeric'] and self._is_percentage_range(series))):
+            elif any(word in col_lower for word in ["perc", "rating", "percentage", "percent", "%", "score", "ratio"]) or (
+                props["is_numeric"] and self._is_percentage_range(series)
+            ):
                 datatypes[col] = DataType.PERCENTAGE
 
             # price/currency
-            elif props['is_numeric'] and any(word in col_lower for word in
-                                             ["price", "cost", "revenue", "sales", "income", "expense",
-                                              '$', '€', '£', '¥', '₹', '₽', '₩', '₪', '₦', '₡', '¢', '₨', '₱']):
+            elif props["is_numeric"] and any(
+                word in col_lower
+                for word in [
+                    "price",
+                    "cost",
+                    "revenue",
+                    "sales",
+                    "income",
+                    "expense",
+                    "$",
+                    "€",
+                    "£",
+                    "¥",
+                    "₹",
+                    "₽",
+                    "₩",
+                    "₪",
+                    "₦",
+                    "₡",
+                    "¢",
+                    "₨",
+                    "₱",
+                ]
+            ):
                 datatypes[col] = DataType.PRICE
 
             # Check for integer vs float numeric
-            elif props['is_numeric']:
+            elif props["is_numeric"]:
                 if series.dropna().apply(lambda x: float(x).is_integer()).all():
                     datatypes[col] = DataType.INTEGER
                 else:
                     datatypes[col] = DataType.NUMERIC
 
             # ID columns
-            elif any(word in col_lower for word in
-                     ["id", "tag", "identification", "serial", "key"]):
+            elif any(word in col_lower for word in ["id", "tag", "identification", "serial", "key"]):
                 datatypes[col] = DataType.ID
 
             # categorical (before string to catch categorical data)
-            elif ((props['nunique_ratio'].max() < 0.2 and pd.api.types.is_object_dtype(series)) or
-                  any(word in col_lower for word in ["category", "categories", "type", "group"])):
+            elif (props["nunique_ratio"].max() < 0.2 and pd.api.types.is_object_dtype(series)) or any(
+                word in col_lower for word in ["category", "categories", "type", "group"]
+            ):
                 datatypes[col] = DataType.CATEGORICAL
 
             # string/text
@@ -252,17 +275,16 @@ class FeaturePreProcessor:
         datatypes = self.determine_datatypes(df)
         clean_df = df.copy()
 
-        null_values = ["?", "Error", "na", "NA", "ERROR", "error", "err", "ERR",
-                       "NAType", "natype", "UNKNOWN", "unknown", ""]
+        null_values = ["?", "Error", "na", "NA", "ERROR", "error", "err", "ERR", "NAType", "natype", "UNKNOWN", "unknown", ""]
         clean_df = clean_df.replace(null_values, np.nan)
 
         # Convert numeric columns to proper numeric types
         for col in clean_df.columns:
             if datatypes[col] in [DataType.NUMERIC, DataType.PRICE, DataType.PERCENTAGE, DataType.INTEGER]:
-                clean_df[col] = pd.to_numeric(clean_df[col], errors='coerce')
+                clean_df[col] = pd.to_numeric(clean_df[col], errors="coerce")
 
         if drop_na:
-            clean_df = clean_df.dropna(how='any')
+            clean_df = clean_df.dropna(how="any")
         else:
             for col in clean_df.columns:
                 if not clean_df[col].isnull().any():
@@ -286,7 +308,7 @@ class FeaturePreProcessor:
         clean_df = clean_df.reset_index(drop=True)
         return clean_df, datatypes
 
-    def scaler(self, df: pd.DataFrame, scaler_type: str = 'standard', datatypes: Dict[str, str] = None):
+    def scaler(self, df: pd.DataFrame, scaler_type: str = "standard", datatypes: Dict[str, str] = None):
         """
         Scales the features using the specified scaler type.
 
@@ -309,7 +331,9 @@ class FeaturePreProcessor:
             if datatypes[col] in [self.ENUM.price, self.ENUM.numeric, self.ENUM.percentage]:
                 df[col] = scaler_func(df[col])
 
-    def process(self, df: pd.DataFrame, drop_na: bool = True, scaler_type: str = 'standard', remove_outlier: bool = True) -> pd.DataFrame:
+    def process(
+        self, df: pd.DataFrame, drop_na: bool = True, scaler_type: str = "standard", remove_outlier: bool = True
+    ) -> pd.DataFrame:
         """
         Clean and scale numeric features in the dataframe.
 
@@ -322,9 +346,14 @@ class FeaturePreProcessor:
         Returns:
             Processed DataFrame
         """
-    def process(self, df: pd.DataFrame, drop_na: bool = True, 
-                scaler_type: Union[ScalerType, str] = ScalerType.STANDARD, 
-                remove_outlier: bool = True) -> pd.DataFrame:
+
+    def process(
+        self,
+        df: pd.DataFrame,
+        drop_na: bool = True,
+        scaler_type: Union[ScalerType, str] = ScalerType.STANDARD,
+        remove_outlier: bool = True,
+    ) -> pd.DataFrame:
         """
         Clean and scale numeric features in the dataframe.
 
@@ -340,7 +369,7 @@ class FeaturePreProcessor:
         # Convert string to enum if needed
         if isinstance(scaler_type, str):
             scaler_type = ScalerType(scaler_type)
-            
+
         if scaler_type not in self.scalers:
             raise ValueError(f"Unknown scaler type: {scaler_type}. Available: {list(self.scalers.keys())}")
 

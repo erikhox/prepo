@@ -10,7 +10,7 @@ from typing import Union, List, Dict, Any, Optional
 
 class DataType(Enum):
     """Type-safe enumeration for data types detected in DataFrames."""
-    
+
     STRING = "string"
     NUMERIC = "numeric"
     INTEGER = "integer"
@@ -29,7 +29,7 @@ class DataType(Enum):
 
 class ScalerType(Enum):
     """Type-safe enumeration for scaling methods."""
-    
+
     STANDARD = "standard"
     ROBUST = "robust"
     MINMAX = "minmax"
@@ -41,7 +41,7 @@ class ScalerType(Enum):
 
 class FileFormat(Enum):
     """Type-safe enumeration for supported file formats."""
-    
+
     CSV = "csv"
     JSON = "json"
     EXCEL = "excel"

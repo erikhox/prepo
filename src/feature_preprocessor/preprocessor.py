@@ -16,7 +16,7 @@ from typing import Dict, Tuple
 class FeaturePreProcessor:
     """
     A class for preprocessing pandas DataFrames.
-    
+
     This class provides methods for:
     - Determining data types of DataFrame columns
     - Cleaning data (handling missing values)
@@ -26,10 +26,10 @@ class FeaturePreProcessor:
 
     def __init__(self):
         self.scalers = {
-            'standard': self._standard_scaler,
-            'robust': self._robust_scaler,
-            'minmax': self._minmax_scaler,
-            'none': None
+            "standard": self._standard_scaler,
+            "robust": self._robust_scaler,
+            "minmax": self._minmax_scaler,
+            "none": None,
         }
 
     def _robust_scaler(self, series: pd.Series) -> pd.Series:
@@ -71,11 +71,11 @@ class FeaturePreProcessor:
     def clean_outliers(self, df: pd.DataFrame, dt: Dict[str, str]) -> pd.DataFrame:
         """
         Remove outliers from numeric columns in the dataframe.
-        
+
         Args:
             df: DataFrame to clean
             dt: Dictionary mapping column names to their data types
-            
+
         Returns:
             DataFrame with outliers removed
         """
@@ -88,17 +88,17 @@ class FeaturePreProcessor:
                 iqrv = iqr(newdf[col])
                 q1 = newdf[col].quantile(0.25)
                 q3 = newdf[col].quantile(0.75)
-                newdf = newdf[newdf[col].between(q1-1.5*iqrv, q3+1.5*iqrv)]
+                newdf = newdf[newdf[col].between(q1 - 1.5 * iqrv, q3 + 1.5 * iqrv)]
 
         return newdf
 
     def is_timeseries(self, df: pd.DataFrame) -> bool:
         """
         Determine if the dataframe represents a time series (has exactly one temporal column).
-        
+
         Args:
             df: DataFrame to analyze
-            
+
         Returns:
             True if the dataframe is a time series, False otherwise
         """
@@ -109,10 +109,10 @@ class FeaturePreProcessor:
     def determine_datatypes(self, df: pd.DataFrame) -> Dict[str, str]:
         """
         Determine the data type of each column in the dataframe.
-        
+
         Args:
             df: DataFrame to analyze
-            
+
         Returns:
             Dictionary mapping column names to their inferred data types
         """
@@ -125,17 +125,17 @@ class FeaturePreProcessor:
         for col in sample_df.columns:
             series = sample_df[col]
             column_properties[col] = {
-                'is_numeric': pd.api.types.is_numeric_dtype(series),
-                'nunique': series.nunique(),
-                'nunique_ratio': series.nunique() / len(sample_df) if len(sample_df) > 0 else 0,
-                'col_lower': col.lower(),
-                'na_count': series.isna().sum()
+                "is_numeric": pd.api.types.is_numeric_dtype(series),
+                "nunique": series.nunique(),
+                "nunique_ratio": series.nunique() / len(sample_df) if len(sample_df) > 0 else 0,
+                "col_lower": col.lower(),
+                "na_count": series.isna().sum(),
             }
 
         for col in sample_df.columns:
             props = column_properties[col]
             series = sample_df[col]
-            col_lower = props['col_lower']
+            col_lower = props["col_lower"]
 
             # temporal
             if any(word in col_lower for word in ["date", "time", "year", "month", "day"]):
@@ -146,37 +146,58 @@ class FeaturePreProcessor:
                 datatypes[col] = "temporal"
 
             # binary
-            elif props['nunique'] == 2:
+            elif props["nunique"] == 2:
                 datatypes[col] = "binary"
 
             # percentage
-            elif props['is_numeric'] and (
-                    any(word in col_lower for word in
-                        ["perc", "rating", "percentage", "percent", "%", "score", "ratio"]) or
-                    (series.dropna().between(0, 1).mean() > 0.9 and "rate" in col_lower)
+            elif props["is_numeric"] and (
+                any(word in col_lower for word in ["perc", "rating", "percentage", "percent", "%", "score", "ratio"])
+                or (series.dropna().between(0, 1).mean() > 0.9 and "rate" in col_lower)
             ):
                 datatypes[col] = "percentage"
 
             # price/currency
-            elif props['is_numeric'] and any(word in col_lower for word in
-                                             ["price", "cost", "revenue", "sales", "income", "expense",
-                                              '$', '€', '£', '¥', '₹', '₽', '₩', '₪', '₦', '₡', '¢', '₨', '₱']):
+            elif props["is_numeric"] and any(
+                word in col_lower
+                for word in [
+                    "price",
+                    "cost",
+                    "revenue",
+                    "sales",
+                    "income",
+                    "expense",
+                    "$",
+                    "€",
+                    "£",
+                    "¥",
+                    "₹",
+                    "₽",
+                    "₩",
+                    "₪",
+                    "₦",
+                    "₡",
+                    "¢",
+                    "₨",
+                    "₱",
+                ]
+            ):
                 datatypes[col] = "price"
 
             # ID columns
-            elif props['is_numeric'] and (col_lower.endswith('id') or col_lower.startswith('id')):
+            elif props["is_numeric"] and (col_lower.endswith("id") or col_lower.startswith("id")):
                 datatypes[col] = "id"
 
             # numeric
-            elif props['is_numeric']:
+            elif props["is_numeric"]:
                 if series.dropna().apply(lambda x: float(x).is_integer()).all():
                     datatypes[col] = "integer"
                 else:
                     datatypes[col] = "numeric"
 
             # categorical
-            elif ((props['nunique_ratio'] < 0.2 and pd.api.types.is_object_dtype(series)) or
-                  any(word in col_lower for word in ["category", "categories", "type", "group"])):
+            elif (props["nunique_ratio"] < 0.2 and pd.api.types.is_object_dtype(series)) or any(
+                word in col_lower for word in ["category", "categories", "type", "group"]
+            ):
                 datatypes[col] = "categorical"
 
             # string
@@ -195,23 +216,22 @@ class FeaturePreProcessor:
     def clean_data(self, df: pd.DataFrame, drop_na: bool = True) -> Tuple[pd.DataFrame, Dict[str, str]]:
         """
         Clean the dataframe by handling missing values and standardizing null representations.
-        
+
         Args:
             df: DataFrame to clean
             drop_na: If True, drop rows with NA values; if False, impute them
-            
+
         Returns:
             Tuple of (cleaned_dataframe, datatypes_dict)
         """
         datatypes = self.determine_datatypes(df)
         clean_df = df.copy()
 
-        null_values = ["?", "Error", "na", "NA", "ERROR", "error", "err", "ERR",
-                       "NAType", "natype", "UNKNOWN", "unknown", ""]
+        null_values = ["?", "Error", "na", "NA", "ERROR", "error", "err", "ERR", "NAType", "natype", "UNKNOWN", "unknown", ""]
         clean_df = clean_df.replace(null_values, np.nan)
 
         if drop_na:
-            clean_df = clean_df.dropna(how='any')
+            clean_df = clean_df.dropna(how="any")
         else:
             for col in clean_df.columns:
                 if not clean_df[col].isnull().any():
@@ -235,15 +255,15 @@ class FeaturePreProcessor:
         clean_df = clean_df.reset_index(drop=True)
         return clean_df, datatypes
 
-    def scaler(self, df: pd.DataFrame, scaler_type: str = 'standard', datatypes: Dict[str, str] = None):
+    def scaler(self, df: pd.DataFrame, scaler_type: str = "standard", datatypes: Dict[str, str] = None):
         """
         Scales the features using the specified scaler type.
-        
+
         Args:
             df: Cleaned dataframe to scale
             scaler_type: Type of scaler to use (standard, robust, minmax)
             datatypes: Datatypes of dataframe
-            
+
         Returns:
             None (scales the dataframe in-place)
         """
@@ -258,16 +278,18 @@ class FeaturePreProcessor:
             if datatypes[col] in ["price", "numeric", "percentage"]:
                 df[col] = scaler_func(df[col])
 
-    def process(self, df: pd.DataFrame, drop_na: bool = True, scaler_type: str = 'standard', remove_outlier: bool = True) -> pd.DataFrame:
+    def process(
+        self, df: pd.DataFrame, drop_na: bool = True, scaler_type: str = "standard", remove_outlier: bool = True
+    ) -> pd.DataFrame:
         """
         Clean and scale numeric features in the dataframe.
-        
+
         Args:
             df: DataFrame to process
             drop_na: Whether to drop NA values during cleaning
             scaler_type: Type of scaler to use ('standard', 'robust', 'minmax')
             remove_outlier: Choose to remove outliers or not
-            
+
         Returns:
             Processed DataFrame
         """

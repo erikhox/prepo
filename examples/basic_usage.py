@@ -3,21 +3,22 @@ import numpy as np
 from src.prepo import FeaturePreProcessor
 from pathlib import Path
 
+
 def main():
     """
     Demonstrate basic usage of the FeaturePreProcessor package.
     """
     # Create a sample dataframe
     data = {
-        'date_column': ['2023-01-01', '2023-01-02', np.nan, '2023-01-04', '2023-01-05'],
-        'price_USD': [100.50, np.nan, 200.75, 150.25, 300.00],
-        'percentage_score': [0.85, 0.92, np.nan, 0.78, 0.95],
-        'rating_100': [85, 92, np.nan, 78, 95],
-        'is_active': [True, False, np.nan, True, False],
-        'category': ['A', 'B', np.nan, 'A', 'C'],
-        'revenue': [1000.50, 2000.75, np.nan, 1500.25, 3000.00],
-        'count': [10, 15, np.nan, 12, 20],
-        'description': ['Product A', np.nan, 'Product C', 'Product D', 'Product E']
+        "date_column": ["2023-01-01", "2023-01-02", np.nan, "2023-01-04", "2023-01-05"],
+        "price_USD": [100.50, np.nan, 200.75, 150.25, 300.00],
+        "percentage_score": [0.85, 0.92, np.nan, 0.78, 0.95],
+        "rating_100": [85, 92, np.nan, 78, 95],
+        "is_active": [True, False, np.nan, True, False],
+        "category": ["A", "B", np.nan, "A", "C"],
+        "revenue": [1000.50, 2000.75, np.nan, 1500.25, 3000.00],
+        "count": [10, 15, np.nan, 12, 20],
+        "description": ["Product A", np.nan, "Product C", "Product D", "Product E"],
     }
     df = pd.DataFrame(data)
 
@@ -43,7 +44,7 @@ def main():
 
     # Process data (clean, remove outliers, scale)
     print("\nProcessing data (cleaning, removing outliers, scaling)...")
-    processed_df = processor.process(df, drop_na=True, scaler_type='standard', remove_outlier=True)
+    processed_df = processor.process(df, drop_na=True, scaler_type="standard", remove_outlier=True)
     print("Processed DataFrame:")
     print(processed_df)
     print("\nProcessed DataFrame shape:", processed_df.shape)
@@ -61,7 +62,7 @@ def main():
         real_df = pd.read_csv(file_path, sep=";")
         print("Original dataset shape:", real_df.shape)
 
-        processed_real_df = processor.process(real_df, drop_na=True, scaler_type='standard', remove_outlier=True)
+        processed_real_df = processor.process(real_df, drop_na=True, scaler_type="standard", remove_outlier=True)
         print("Processed dataset shape:", processed_real_df.shape)
 
         file_path = Path("../data/processed/winequality-white-processed.csv")
@@ -69,6 +70,7 @@ def main():
         print("Processed data saved to ../data/processed/winequality-white-processed.csv")
     except Exception as e:
         print(f"Error processing real dataset: {e}")
+
 
 if __name__ == "__main__":
     main()

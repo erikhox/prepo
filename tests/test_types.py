@@ -23,11 +23,11 @@ class TestDataTypes(unittest.TestCase):
         self.assertEqual(DataType.ID.value, "id")
         self.assertEqual(DataType.TEXT.value, "text")
         self.assertEqual(DataType.UNKNOWN.value, "unknown")
-        
+
         # Test string representation
         self.assertEqual(str(DataType.NUMERIC), "numeric")
         self.assertEqual(str(DataType.PRICE), "price")
-        
+
         # Test enum membership
         self.assertIn(DataType.STRING, DataType)
         self.assertIn(DataType.NUMERIC, DataType)
@@ -39,11 +39,11 @@ class TestDataTypes(unittest.TestCase):
         self.assertEqual(ScalerType.ROBUST.value, "robust")
         self.assertEqual(ScalerType.MINMAX.value, "minmax")
         self.assertEqual(ScalerType.NONE.value, "none")
-        
+
         # Test string representation
         self.assertEqual(str(ScalerType.STANDARD), "standard")
         self.assertEqual(str(ScalerType.ROBUST), "robust")
-        
+
         # Test enum membership
         self.assertIn(ScalerType.STANDARD, ScalerType)
         self.assertIn(ScalerType.NONE, ScalerType)
@@ -61,11 +61,11 @@ class TestDataTypes(unittest.TestCase):
         self.assertEqual(FileFormat.PICKLE.value, "pickle")
         self.assertEqual(FileFormat.TSV.value, "tsv")
         self.assertEqual(FileFormat.ORC.value, "orc")
-        
+
         # Test string representation
         self.assertEqual(str(FileFormat.CSV), "csv")
         self.assertEqual(str(FileFormat.PARQUET), "parquet")
-        
+
         # Test enum membership
         self.assertIn(FileFormat.CSV, FileFormat)
         self.assertIn(FileFormat.JSON, FileFormat)
@@ -75,11 +75,11 @@ class TestDataTypes(unittest.TestCase):
         # Test DataType creation from string
         self.assertEqual(DataType("numeric"), DataType.NUMERIC)
         self.assertEqual(DataType("price"), DataType.PRICE)
-        
-        # Test ScalerType creation from string  
+
+        # Test ScalerType creation from string
         self.assertEqual(ScalerType("standard"), ScalerType.STANDARD)
         self.assertEqual(ScalerType("robust"), ScalerType.ROBUST)
-        
+
         # Test FileFormat creation from string
         self.assertEqual(FileFormat("csv"), FileFormat.CSV)
         self.assertEqual(FileFormat("json"), FileFormat.JSON)
@@ -88,10 +88,10 @@ class TestDataTypes(unittest.TestCase):
         """Test that invalid enum values raise appropriate errors."""
         with self.assertRaises(ValueError):
             DataType("invalid_type")
-        
+
         with self.assertRaises(ValueError):
             ScalerType("invalid_scaler")
-        
+
         with self.assertRaises(ValueError):
             FileFormat("invalid_format")
 
@@ -100,7 +100,7 @@ class TestDataTypes(unittest.TestCase):
         # Test equality
         self.assertEqual(DataType.NUMERIC, DataType.NUMERIC)
         self.assertNotEqual(DataType.NUMERIC, DataType.STRING)
-        
+
         # Test that enums are not equal to their string values
         self.assertNotEqual(DataType.NUMERIC, "numeric")
         self.assertNotEqual(ScalerType.STANDARD, "standard")
@@ -108,17 +108,11 @@ class TestDataTypes(unittest.TestCase):
     def test_enum_hashing(self):
         """Test that enums can be used as dictionary keys."""
         # Test with DataType
-        data_type_dict = {
-            DataType.NUMERIC: "numeric_handler",
-            DataType.STRING: "string_handler"
-        }
+        data_type_dict = {DataType.NUMERIC: "numeric_handler", DataType.STRING: "string_handler"}
         self.assertEqual(data_type_dict[DataType.NUMERIC], "numeric_handler")
-        
+
         # Test with ScalerType
-        scaler_dict = {
-            ScalerType.STANDARD: "standard_scaler",
-            ScalerType.ROBUST: "robust_scaler"
-        }
+        scaler_dict = {ScalerType.STANDARD: "standard_scaler", ScalerType.ROBUST: "robust_scaler"}
         self.assertEqual(scaler_dict[ScalerType.STANDARD], "standard_scaler")
 
     def test_enum_iteration(self):
@@ -128,13 +122,13 @@ class TestDataTypes(unittest.TestCase):
         self.assertIn(DataType.NUMERIC, data_types)
         self.assertIn(DataType.STRING, data_types)
         self.assertEqual(len(data_types), 11)  # Should have 11 data types
-        
+
         # Test ScalerType iteration
         scaler_types = list(ScalerType)
         self.assertIn(ScalerType.STANDARD, scaler_types)
         self.assertIn(ScalerType.NONE, scaler_types)
         self.assertEqual(len(scaler_types), 4)  # Should have 4 scaler types
-        
+
         # Test FileFormat iteration
         file_formats = list(FileFormat)
         self.assertIn(FileFormat.CSV, file_formats)
@@ -142,5 +136,5 @@ class TestDataTypes(unittest.TestCase):
         self.assertEqual(len(file_formats), 10)  # Should have 10 file formats
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
