@@ -6,7 +6,7 @@ KNN imputation, outlier removal, and multiple scaling methods.
 
 Features:
 - Automated data type detection with type-safe enums
-- KNN imputation for missing values  
+- KNN imputation for missing values
 - Multiple scaling methods (standard, robust, minmax)
 - Outlier removal using IQR method
 - CLI tool supporting 8+ file formats
