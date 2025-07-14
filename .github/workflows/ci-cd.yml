@@ -1,0 +1,325 @@
+10 --max-line-length=127 --statistics
+      
+      - name: Check code formatting with black
+        run: black --check --diff src tests
+      
+      - name: Check import sorting with isort
+        run: isort --check-only --diff src tests
+      
+      - name: Type check with mypy
+        run: mypy src/prepo --ignore-missing-imports
+        continue-on-error: true  # Don't fail on type errors for now
+      
+      - name: Test with pytest
+        run: |
+          pytest tests/ --cov=src/prepo --cov-report=xml --cov-report=html --cov-report=term-missing --cov-fail-under=85
+        env:
+          PYTEST_ADDOPTS: "--maxfail=5 --tb=short"
+      
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+      
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+      
+      - name: Create test data
+        run: |
+          python -c "
+          import pandas as pd
+          import numpy as np
+          
+          # Create comprehensive test dataset
+          np.random.seed(42)
+          n_rows = 1000
+          
+          df = pd.DataFrame({
+              'numeric_col': np.random.normal(50, 15, n_rows),
+              'price_USD': np.random.uniform(10, 1000, n_rows),
+              'percentage': np.random.uniform(0, 1, n_rows),
+              'category': np.random.choice(['A', 'B', 'C', 'D'], n_rows),
+              'date_col': pd.date_range('2020-01-01', periods=n_rows, freq='D'),
+              'binary_col': np.random.choice([True, False], n_rows),
+              'id_column': range(1001, 1001 + n_rows),
+              'text_description': ['Long description text that exceeds 100 characters and should be classified as text type rather than string type for testing purposes.'] * n_rows
+          })
+          
+          # Add some missing values
+          df.loc[::10, 'numeric_col'] = np.nan
+          df.loc[::15, 'price_USD'] = np.nan
+          df.loc[::20, 'percentage'] = np.nan
+          
+          # Save test files in different formats
+          df.to_csv('test_input.csv', index=False)
+          df.to_json('test_input.json', orient='records')
+          df.head(100).to_excel('test_input.xlsx', index=False)
+          print(f'Created test data with {len(df)} rows and {len(df.columns)} columns')
+          "
+      
+      - name: Test CLI functionality - Basic CSV processing
+        run: |
+          echo "Testing basic CSV processing..."
+          prepo test_input.csv test_output_basic.csv --info
+          ls -la test_output_basic.csv
+          wc -l test_output_basic.csv
+      
+      - name: Test CLI functionality - Different scalers
+        run: |
+          echo "Testing different scalers..."
+          prepo test_input.csv test_output_standard.csv --scaler standard
+          prepo test_input.csv test_output_robust.csv --scaler robust
+          prepo test_input.csv test_output_minmax.csv --scaler minmax
+          prepo test_input.csv test_output_none.csv --scaler none
+          
+          echo "Verifying outputs exist..."
+          ls -la test_output_*.csv
+      
+      - name: Test CLI functionality - NA handling
+        run: |
+          echo "Testing NA handling options..."
+          prepo test_input.csv test_output_drop_na.csv --scaler standard
+          prepo test_input.csv test_output_keep_na.csv --scaler standard --keep-na
+          
+          echo "Comparing file sizes (keep-na should be larger)..."
+          wc -l test_output_drop_na.csv test_output_keep_na.csv
+      
+      - name: Test CLI functionality - Outlier handling
+        run: |
+          echo "Testing outlier handling..."
+          prepo test_input.csv test_output_remove_outliers.csv --scaler standard
+          prepo test_input.csv test_output_keep_outliers.csv --scaler standard --no-outliers
+          
+          echo "Verifying outputs..."
+          wc -l test_output_remove_outliers.csv test_output_keep_outliers.csv
+      
+      - name: Test CLI functionality - Different formats
+        run: |
+          echo "Testing different file formats..."
+          prepo test_input.csv test_output.json --scaler robust --keep-na
+          prepo test_input.json test_output_from_json.csv --scaler minmax
+          prepo test_input.xlsx test_output_from_excel.csv --scaler standard
+          
+          echo "Verifying format outputs..."
+          ls -la test_output.json test_output_from_json.csv test_output_from_excel.csv
+          
+          # Verify JSON structure
+          python -c "import json; data = json.load(open('test_output.json')); print(f'JSON output has {len(data)} records')"
+      
+      - name: Test CLI functionality - Explicit format specification
+        run: |
+          echo "Testing explicit format specification..."
+          prepo test_input.csv test_output_explicit.csv --input-format csv --output-format csv --info
+          prepo test_input.csv test_output_explicit.json --input-format csv --output-format json
+      
+      - name: Test CLI functionality - Performance optimizations
+        run: |
+          echo "Testing performance optimizations..."
+          prepo test_input.csv test_output_polars.csv --polars --info
+          prepo test_input.csv test_output_pyarrow.csv --pyarrow --info
+          
+          echo "Verifying optimization outputs..."
+          ls -la test_output_polars.csv test_output_pyarrow.csv
+      
+      - name: Test programmatic usage
+        run: |
+          python -c "
+          import pandas as pd
+          from prepo import FeaturePreProcessor, DataType, ScalerType
+          from prepo.io import FileReader, FileWriter
+          
+          print('Testing programmatic usage...')
+          
+          # Test basic preprocessing
+          processor = FeaturePreProcessor()
+          df = pd.read_csv('test_input.csv')
+          
+          print(f'Original data: {len(df)} rows, {len(df.columns)} columns')
+          
+          # Test data type detection
+          datatypes = processor.determine_datatypes(df)
+          print(f'Detected {len(datatypes)} data types')
+          
+          # Test processing with different configurations
+          processed_standard = processor.process(df, scaler_type=ScalerType.STANDARD)
+          processed_robust = processor.process(df, scaler_type=ScalerType.ROBUST, drop_na=False)
+          
+          print(f'Standard scaler result: {len(processed_standard)} rows')
+          print(f'Robust scaler result: {len(processed_robust)} rows')
+          
+          # Test I/O operations
+          reader = FileReader()
+          writer = FileWriter()
+          
+          # Test different format reading
+          df_json = reader.read_file('test_input.json')
+          df_excel = reader.read_file('test_input.xlsx')
+          
+          print(f'JSON read: {len(df_json)} rows')
+          print(f'Excel read: {len(df_excel)} rows')
+          
+          # Test different format writing
+          writer.write_file(processed_standard, 'programmatic_output.csv')
+          writer.write_file(processed_robust, 'programmatic_output.json')
+          
+          print('Programmatic usage tests completed successfully!')
+          "
+      
+      - name: Verify all outputs
+        run: |
+          echo "Final verification of all outputs..."
+          ls -la test_output* programmatic_output*
+          
+          echo "File sizes:"
+          wc -l *.csv 2>/dev/null || true
+          
+          echo "Integration tests completed successfully!"
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install bandit safety
+      
+      - name: Run bandit security scan
+        run: bandit -r src/ -f json -o bandit-report.json || true
+      
+      - name: Run safety check
+        run: safety check --json --output safety-report.json || true
+      
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    needs: [test, integration-test]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build setuptools wheel twine
+      
+      - name: Build package distributions
+        run: |
+          python -m build
+      
+      - name: Check package integrity
+        run: |
+          python -m twine check dist/*
+      
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  pypi-publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'release' && github.event.action == 'published'
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
+    
+    # Dedicated environment for publishing protection
+    environment:
+      name: pypi
+      url: https://pypi.org/project/prepo/
+    
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+
+  coverage-report:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,performance,all]"
+      
+      - name: Run coverage analysis
+        run: |
+          pytest tests/ --cov=src/prepo --cov-report=html --cov-report=xml --cov-report=term-missing --cov-fail-under=85
+      
+      - name: Generate coverage badge
+        run: |
+          coverage-badge -o coverage.svg -f
+      
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            htmlcov/
+            coverage.xml
+            coverage.svg

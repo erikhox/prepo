@@ -10,29 +10,54 @@ import numpy as np
 from dateutil.parser import parse
 from scipy.stats import iqr
 from sklearn.impute import KNNImputer
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional, Union, List
+from .types import DataType, ScalerType, DataTypeDict
+
+# Optional high-performance libraries
+try:
+    import polars as pl
+    HAS_POLARS = True
+except ImportError:
+    pl = None
+    HAS_POLARS = False
+
+try:
+    import pyarrow as pa
+    HAS_PYARROW = True
+except ImportError:
+    pa = None
+    HAS_PYARROW = False
+
 
 class FeaturePreProcessor:
-    class ENUM:
-        string = "string"
-        numeric = "numeric"
-        percentage = "percentage"
-        price = "price"
-        binary = "binary"
-        temporal = "temporal"
-        id = "id"
-        text = "text"
-        unknown = "unknown"
     """
-    A class for preprocessing pandas DataFrames.
+    A class for preprocessing pandas DataFrames with automated data type detection,
+    KNN imputation, outlier removal, and multiple scaling methods.
+    
+    Features:
+    - Automated data type detection using type-safe enums
+    - KNN imputation for missing values
+    - Multiple scaling methods (standard, robust, minmax)
+    - Outlier removal using IQR method
+    - Optional Polars/PyArrow optimizations
     """
 
-    def __init__(self):
+    def __init__(self, use_polars: bool = False, use_pyarrow: bool = False):
+        """
+        Initialize the FeaturePreProcessor.
+        
+        Args:
+            use_polars: Use Polars for high-performance operations if available
+            use_pyarrow: Use PyArrow for optimized I/O operations if available
+        """
+        self.use_polars = use_polars and HAS_POLARS
+        self.use_pyarrow = use_pyarrow and HAS_PYARROW
+        
         self.scalers = {
-            'standard': self._standard_scaler,
-            'robust': self._robust_scaler,
-            'minmax': self._minmax_scaler,
-            'none': None
+            ScalerType.STANDARD: self._standard_scaler,
+            ScalerType.ROBUST: self._robust_scaler,
+            ScalerType.MINMAX: self._minmax_scaler,
+            ScalerType.NONE: None
         }
 
     def _robust_scaler(self, series: pd.Series) -> pd.Series:
@@ -106,9 +131,9 @@ class FeaturePreProcessor:
         """Check if a value is a string."""
         return isinstance(value, str)
 
-    def clean_outliers(self, df: pd.DataFrame, dt: Dict[str, str]) -> pd.DataFrame:
+    def clean_outliers(self, df: pd.DataFrame, dt: DataTypeDict) -> pd.DataFrame:
         """
-        Remove outliers from numeric columns in the dataframe.
+        Remove outliers from numeric columns in the dataframe using IQR method.
 
         Args:
             df: DataFrame to clean
@@ -122,7 +147,7 @@ class FeaturePreProcessor:
         for col in df.columns:
             if any(word in col.lower() for word in ["id", "tag", "identification", "item"]):
                 continue
-            if dt[col] in [self.ENUM.price, self.ENUM.numeric, self.ENUM.percentage]:
+            if dt[col] in [DataType.PRICE, DataType.NUMERIC, DataType.PERCENTAGE, DataType.INTEGER]:
                 iqrv = iqr(newdf[col])
                 q1 = newdf[col].quantile(0.25)
                 q3 = newdf[col].quantile(0.75)
@@ -130,15 +155,15 @@ class FeaturePreProcessor:
 
         return newdf
 
-    def determine_datatypes(self, df: pd.DataFrame) -> Dict[str, str]:
+    def determine_datatypes(self, df: pd.DataFrame) -> DataTypeDict:
         """
-        Determine the data type of each column in the dataframe.
+        Determine the data type of each column in the dataframe using automated detection.
 
         Args:
             df: DataFrame to find data types
 
         Returns:
-            dictionary mapping column names to their inferred data types
+            Dictionary mapping column names to their inferred data types
         """
         datatypes = {}
         sample_size = min(1000, len(df.index))
@@ -163,55 +188,63 @@ class FeaturePreProcessor:
 
             # temporal
             if any(word in col_lower for word in ["date", "time", "year", "month", "day"]):
-                datatypes[col] = self.ENUM.temporal
+                datatypes[col] = DataType.TEMPORAL
             elif series.dropna().apply(self._is_date).all() and not series.dropna().empty:
-                datatypes[col] = self.ENUM.temporal
+                datatypes[col] = DataType.TEMPORAL
 
             # binary
             elif props['nunique'] == 2:
-                datatypes[col] = self.ENUM.binary
+                datatypes[col] = DataType.BINARY
 
             # percentage
             elif (any(word in col_lower for word in
                       ["perc", "rating", "percentage", "percent", "%", "score", "ratio"]) or
                   (props['is_numeric'] and self._is_percentage_range(series))):
-                datatypes[col] = self.ENUM.percentage
+                datatypes[col] = DataType.PERCENTAGE
 
             # price/currency
             elif props['is_numeric'] and any(word in col_lower for word in
                                              ["price", "cost", "revenue", "sales", "income", "expense",
                                               '$', '€', '£', '¥', '₹', '₽', '₩', '₪', '₦', '₡', '¢', '₨', '₱']):
-                datatypes[col] = self.ENUM.price
+                datatypes[col] = DataType.PRICE
 
-            # numeric
+            # Check for integer vs float numeric
             elif props['is_numeric']:
-                datatypes[col] = self.ENUM.numeric
+                if series.dropna().apply(lambda x: float(x).is_integer()).all():
+                    datatypes[col] = DataType.INTEGER
+                else:
+                    datatypes[col] = DataType.NUMERIC
 
             # ID columns
             elif any(word in col_lower for word in
                      ["id", "tag", "identification", "serial", "key"]):
-                datatypes[col] = self.ENUM.id
+                datatypes[col] = DataType.ID
 
-            # string
+            # categorical (before string to catch categorical data)
+            elif ((props['nunique_ratio'].max() < 0.2 and pd.api.types.is_object_dtype(series)) or
+                  any(word in col_lower for word in ["category", "categories", "type", "group"])):
+                datatypes[col] = DataType.CATEGORICAL
+
+            # string/text
             elif pd.api.types.is_string_dtype(series) or pd.api.types.is_object_dtype(series):
                 if series.dropna().str.len().mean() > 100:
-                    datatypes[col] = self.ENUM.text
+                    datatypes[col] = DataType.TEXT
                 else:
-                    datatypes[col] = self.ENUM.string
+                    datatypes[col] = DataType.STRING
 
             # unknown
             else:
-                datatypes[col] = self.ENUM.unknown
+                datatypes[col] = DataType.UNKNOWN
 
         return datatypes
 
-    def clean_data(self, df: pd.DataFrame, drop_na: bool = True) -> Tuple[pd.DataFrame, Dict[str, str]]:
+    def clean_data(self, df: pd.DataFrame, drop_na: bool = True) -> Tuple[pd.DataFrame, DataTypeDict]:
         """
         Clean the dataframe by handling missing values and standardizing null representations.
 
         Args:
             df: DataFrame to clean
-            drop_na: If True, drop rows with NA values; if False, impute them
+            drop_na: If True, drop rows with NA values; if False, impute them using KNN
 
         Returns:
             Tuple of (cleaned_dataframe, datatypes_dict)
@@ -223,8 +256,9 @@ class FeaturePreProcessor:
                        "NAType", "natype", "UNKNOWN", "unknown", ""]
         clean_df = clean_df.replace(null_values, np.nan)
 
+        # Convert numeric columns to proper numeric types
         for col in clean_df.columns:
-            if datatypes[col] in [self.ENUM.numeric, self.ENUM.price, self.ENUM.percentage]:
+            if datatypes[col] in [DataType.NUMERIC, DataType.PRICE, DataType.PERCENTAGE, DataType.INTEGER]:
                 clean_df[col] = pd.to_numeric(clean_df[col], errors='coerce')
 
         if drop_na:
@@ -234,12 +268,17 @@ class FeaturePreProcessor:
                 if not clean_df[col].isnull().any():
                     continue
 
-                if datatypes[col] in [self.ENUM.numeric, self.ENUM.price, self.ENUM.percentage]:
+                if datatypes[col] in [DataType.NUMERIC, DataType.PRICE, DataType.PERCENTAGE, DataType.INTEGER]:
                     if clean_df[col].notna().sum() >= 3:  # Need at least 3 values for KNN
                         imputer = KNNImputer(n_neighbors=min(3, clean_df[col].notna().sum()))
                         clean_df[col] = imputer.fit_transform(clean_df[[col]]).flatten()
                     else:
                         clean_df[col] = clean_df[col].fillna(clean_df[col].mean())
+
+                elif datatypes[col] == DataType.CATEGORICAL:
+                    mode_value = clean_df[col].mode()
+                    if not mode_value.empty:
+                        clean_df[col] = clean_df[col].fillna(mode_value[0])
 
                 else:
                     clean_df = clean_df.dropna(subset=[col])
@@ -283,6 +322,25 @@ class FeaturePreProcessor:
         Returns:
             Processed DataFrame
         """
+    def process(self, df: pd.DataFrame, drop_na: bool = True, 
+                scaler_type: Union[ScalerType, str] = ScalerType.STANDARD, 
+                remove_outlier: bool = True) -> pd.DataFrame:
+        """
+        Clean and scale numeric features in the dataframe.
+
+        Args:
+            df: DataFrame to process
+            drop_na: Whether to drop NA values during cleaning
+            scaler_type: Type of scaler to use (standard, robust, minmax, none)
+            remove_outlier: Choose to remove outliers or not
+
+        Returns:
+            Processed DataFrame
+        """
+        # Convert string to enum if needed
+        if isinstance(scaler_type, str):
+            scaler_type = ScalerType(scaler_type)
+            
         if scaler_type not in self.scalers:
             raise ValueError(f"Unknown scaler type: {scaler_type}. Available: {list(self.scalers.keys())}")
 
