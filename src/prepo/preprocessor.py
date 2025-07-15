@@ -201,10 +201,10 @@ class FeaturePreProcessor:
             elif props["nunique"] == 2:
                 datatypes[col] = DataType.BINARY
 
-            # percentage
-            elif any(word in col_lower for word in ["perc", "rating", "percentage", "percent", "%", "score", "ratio"]) or (
-                props["is_numeric"] and self._is_percentage_range(series)
-            ):
+            # percentage - only if values are actually in percentage range
+            elif props["is_numeric"] and self._is_percentage_range(series):
+                datatypes[col] = DataType.PERCENTAGE
+            elif any(word in col_lower for word in ["perc", "percentage", "percent", "%"]) and props["is_numeric"] and self._is_percentage_range(series):
                 datatypes[col] = DataType.PERCENTAGE
 
             # price/currency
@@ -335,9 +335,10 @@ class FeaturePreProcessor:
             if any(word in col.lower() for word in ["id", "tag", "identification", "item"]):
                 continue
             if col in datatypes and datatypes[col] in [
-                self.ENUM.PRICE.value,
-                self.ENUM.NUMERIC.value,
-                self.ENUM.PERCENTAGE.value,
+                DataType.PRICE.value,
+                DataType.NUMERIC.value,
+                DataType.PERCENTAGE.value,
+                DataType.INTEGER.value,
             ]:
                 df[col] = scaler_func(df[col])
 

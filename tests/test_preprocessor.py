@@ -74,7 +74,7 @@ class TestFeaturePreProcessor(unittest.TestCase):
         clean_df, datatypes = self.processor.clean_data(self.df, drop_na=True)
 
         # Check that rows with NaN values are dropped
-        self.assertEqual(len(clean_df), 2)  # Only 2 rows have no NaN values
+        self.assertEqual(len(clean_df), 3)  # Only 3 rows have no NaN values (rows 0, 3, 4)
         self.assertFalse(clean_df.isnull().any().any())
 
     def test_clean_data_impute(self):

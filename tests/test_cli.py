@@ -182,7 +182,10 @@ class TestCLI(unittest.TestCase):
         self.assertTrue(mock_print.called)
 
         # Check for specific info messages
-        call_args = [call[0][0] for call in mock_print.call_args_list]
+        call_args = []
+        for call in mock_print.call_args_list:
+            if call[0]:  # Check if there are positional arguments
+                call_args.append(call[0][0])
         info_messages = [msg for msg in call_args if "Detected data types:" in str(msg)]
         self.assertTrue(len(info_messages) > 0)
 

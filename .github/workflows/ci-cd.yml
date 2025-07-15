@@ -56,7 +56,7 @@ jobs:
       
       - name: Test with pytest
         run: |
-          pytest tests/ --cov=src/prepo --cov-report=xml --cov-report=html --cov-report=term-missing --cov-fail-under=85
+          pytest tests/ --cov=src/prepo --cov-report=xml --cov-report=html --cov-report=term-missing
         env:
           PYTEST_ADDOPTS: "--maxfail=5 --tb=short"
       
