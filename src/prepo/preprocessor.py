@@ -5,7 +5,7 @@ This module contains the main FeaturePreProcessor class that provides
 methods for cleaning, scaling, and processing pandas DataFrames.
 """
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -18,18 +18,16 @@ from .types import DataType, DataTypeDict, ScalerType
 # Optional high-performance libraries
 try:
     import polars as pl
-
     HAS_POLARS = True
 except ImportError:
-    pl = None
+    pl = None  # type: ignore
     HAS_POLARS = False
 
 try:
     import pyarrow as pa
-
     HAS_PYARROW = True
 except ImportError:
-    pa = None
+    pa = None  # type: ignore
     HAS_PYARROW = False
 
 
@@ -311,7 +309,7 @@ class FeaturePreProcessor:
         clean_df = clean_df.reset_index(drop=True)
         return clean_df, datatypes
 
-    def scaler(self, df: pd.DataFrame, scaler_type: str = "standard", datatypes: Dict[str, str] = None):
+    def scaler(self, df: pd.DataFrame, scaler_type: str = "standard", datatypes: Optional[Dict[str, str]] = None):
         """
         Scales the features using the specified scaler type.
 
@@ -323,7 +321,7 @@ class FeaturePreProcessor:
         Returns:
             None (scales the dataframe in-place)
         """
-        scaler_func = self.scalers[scaler_type]
+        scaler_func = self.scalers[ScalerType(scaler_type)]
 
         if scaler_func is None:
             return
@@ -333,22 +331,6 @@ class FeaturePreProcessor:
                 continue
             if datatypes[col] in [self.ENUM.PRICE, self.ENUM.NUMERIC, self.ENUM.PERCENTAGE]:
                 df[col] = scaler_func(df[col])
-
-    def process(
-        self, df: pd.DataFrame, drop_na: bool = True, scaler_type: str = "standard", remove_outlier: bool = True
-    ) -> pd.DataFrame:
-        """
-        Clean and scale numeric features in the dataframe.
-
-        Args:
-            df: DataFrame to process
-            drop_na: Whether to drop NA values during cleaning
-            scaler_type: Type of scaler to use ('standard', 'robust', 'minmax')
-            remove_outlier: Choose to remove outliers or not
-
-        Returns:
-            Processed DataFrame
-        """
 
     def process(
         self,
@@ -384,7 +366,7 @@ class FeaturePreProcessor:
             clean_df = self.clean_outliers(clean_df, datatypes)
 
         # Scale numeric columns
-        self.scaler(clean_df, scaler_type, datatypes)
+        self.scaler(clean_df, scaler_type.value, datatypes)
 
         clean_df.index = range(len(clean_df))
         return clean_df

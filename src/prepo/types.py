@@ -59,5 +59,5 @@ class FileFormat(Enum):
 
 # Type aliases for better code readability
 DataTypeDict = Dict[str, DataType]
-ScalerFunction = Union[Callable, None]
+ScalerFunction = Optional[Callable[[Any], Any]]
 FileData = Union[Dict[str, Any], List[Dict[str, Any]]]
