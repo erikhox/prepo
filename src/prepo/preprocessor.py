@@ -330,11 +330,15 @@ class FeaturePreProcessor:
 
         if datatypes is None:
             return
-            
+
         for col in df.columns:
             if any(word in col.lower() for word in ["id", "tag", "identification", "item"]):
                 continue
-            if col in datatypes and datatypes[col] in [self.ENUM.PRICE.value, self.ENUM.NUMERIC.value, self.ENUM.PERCENTAGE.value]:
+            if col in datatypes and datatypes[col] in [
+                self.ENUM.PRICE.value,
+                self.ENUM.NUMERIC.value,
+                self.ENUM.PERCENTAGE.value,
+            ]:
                 df[col] = scaler_func(df[col])
 
     def process(
