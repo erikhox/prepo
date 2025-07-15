@@ -214,7 +214,8 @@ class FileWriter:
     def _write_with_pandas(self, df: pd.DataFrame, filepath: Union[str, Path], file_format: FileFormat, **kwargs) -> None:
         """Write file using pandas."""
         if file_format == FileFormat.CSV:
-            df.to_csv(filepath, index=False, **kwargs)
+            # Use proper quoting to handle special characters and newlines
+            df.to_csv(filepath, index=False, quoting=1, **kwargs)  # quoting=1 is csv.QUOTE_ALL
         elif file_format == FileFormat.JSON:
             df.to_json(filepath, **kwargs)
         elif file_format in [FileFormat.XLSX, FileFormat.XLS, FileFormat.EXCEL]:
@@ -226,7 +227,8 @@ class FileWriter:
         elif file_format == FileFormat.PICKLE:
             df.to_pickle(filepath, **kwargs)
         elif file_format == FileFormat.TSV:
-            df.to_csv(filepath, sep="\t", index=False, **kwargs)
+            # Use proper quoting for TSV as well
+            df.to_csv(filepath, sep="\t", index=False, quoting=1, **kwargs)
         elif file_format == FileFormat.ORC:
             df.to_orc(filepath, **kwargs)
         else:

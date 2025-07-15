@@ -224,8 +224,13 @@ class TestCLI(unittest.TestCase):
     @patch("builtins.print")
     def test_process_file_write_error(self, mock_print, mock_stderr):
         """Test handling of file write errors."""
-        # Try to write to a read-only location
-        readonly_output = "/dev/null/output.csv" if os.name != "nt" else "C:\\Windows\\System32\\output.csv"
+        # Create a path that will definitely cause a write error on all platforms
+        if os.name != "nt":
+            readonly_output = "/dev/null/output.csv"
+        else:
+            # On Windows, use a path with invalid characters or non-existent drive
+            readonly_output = os.path.join(self.temp_dir, "nonexistent_subdir", "output.csv")
+            # Don't create the subdirectory, so write will fail
 
         parser = create_parser()
         args = parser.parse_args([self.input_path, readonly_output])
