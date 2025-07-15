@@ -201,6 +201,10 @@ class FeaturePreProcessor:
             elif props["nunique"] == 2:
                 datatypes[col] = DataType.BINARY
 
+            # ID columns (check before numeric to catch numeric IDs)
+            elif any(word in col_lower for word in ["id", "tag", "identification", "serial", "key"]):
+                datatypes[col] = DataType.ID
+
             # percentage - only if values are actually in percentage range
             elif props["is_numeric"] and self._is_percentage_range(series):
                 datatypes[col] = DataType.PERCENTAGE
@@ -244,10 +248,6 @@ class FeaturePreProcessor:
                     datatypes[col] = DataType.INTEGER
                 else:
                     datatypes[col] = DataType.NUMERIC
-
-            # ID columns
-            elif any(word in col_lower for word in ["id", "tag", "identification", "serial", "key"]):
-                datatypes[col] = DataType.ID
 
             # categorical (before string to catch categorical data)
             elif (props["nunique_ratio"].max() < 0.2 and pd.api.types.is_object_dtype(series)) or any(
@@ -315,19 +315,23 @@ class FeaturePreProcessor:
         clean_df = clean_df.reset_index(drop=True)
         return clean_df, datatypes
 
-    def scaler(self, df: pd.DataFrame, scaler_type: str = "standard", datatypes: Optional[Dict[str, str]] = None):
+    def scaler(self, df: pd.DataFrame, scaler_type: Union[ScalerType, str] = "standard", datatypes: Optional[Dict[str, Union[DataType, str]]] = None):
         """
         Scales the features using the specified scaler type.
 
         Args:
             df: Cleaned dataframe to scale
-            scaler_type: Type of scaler to use (standard, robust, minmax)
-            datatypes: Datatypes of dataframe
+            scaler_type: Type of scaler to use (standard, robust, minmax) - can be string or ScalerType enum
+            datatypes: Datatypes of dataframe - can contain DataType enums or strings
 
         Returns:
             None (scales the dataframe in-place)
         """
-        scaler_func = self.scalers[ScalerType(scaler_type)]
+        # Convert string to enum if needed
+        if isinstance(scaler_type, str):
+            scaler_type = ScalerType(scaler_type)
+        
+        scaler_func = self.scalers[scaler_type]
 
         if scaler_func is None:
             return
@@ -338,7 +342,15 @@ class FeaturePreProcessor:
         for col in df.columns:
             if any(word in col.lower() for word in ["id", "tag", "identification", "item"]):
                 continue
-            if col in datatypes and datatypes[col] in [
+            
+            # Handle both enum and string datatypes
+            col_datatype = datatypes[col]
+            if isinstance(col_datatype, DataType):
+                col_datatype_value = col_datatype.value
+            else:
+                col_datatype_value = col_datatype
+                
+            if col in datatypes and col_datatype_value in [
                 DataType.PRICE.value,
                 DataType.NUMERIC.value,
                 DataType.PERCENTAGE.value,
