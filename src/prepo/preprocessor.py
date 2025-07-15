@@ -204,7 +204,11 @@ class FeaturePreProcessor:
             # percentage - only if values are actually in percentage range
             elif props["is_numeric"] and self._is_percentage_range(series):
                 datatypes[col] = DataType.PERCENTAGE
-            elif any(word in col_lower for word in ["perc", "percentage", "percent", "%"]) and props["is_numeric"] and self._is_percentage_range(series):
+            elif (
+                any(word in col_lower for word in ["perc", "percentage", "percent", "%"])
+                and props["is_numeric"]
+                and self._is_percentage_range(series)
+            ):
                 datatypes[col] = DataType.PERCENTAGE
 
             # price/currency
