@@ -315,7 +315,12 @@ class FeaturePreProcessor:
         clean_df = clean_df.reset_index(drop=True)
         return clean_df, datatypes
 
-    def scaler(self, df: pd.DataFrame, scaler_type: Union[ScalerType, str] = "standard", datatypes: Optional[Dict[str, Union[DataType, str]]] = None):
+    def scaler(
+        self,
+        df: pd.DataFrame,
+        scaler_type: Union[ScalerType, str] = "standard",
+        datatypes: Optional[Dict[str, Union[DataType, str]]] = None,
+    ):
         """
         Scales the features using the specified scaler type.
 
@@ -330,7 +335,7 @@ class FeaturePreProcessor:
         # Convert string to enum if needed
         if isinstance(scaler_type, str):
             scaler_type = ScalerType(scaler_type)
-        
+
         scaler_func = self.scalers[scaler_type]
 
         if scaler_func is None:
@@ -342,14 +347,14 @@ class FeaturePreProcessor:
         for col in df.columns:
             if any(word in col.lower() for word in ["id", "tag", "identification", "item"]):
                 continue
-            
+
             # Handle both enum and string datatypes
             col_datatype = datatypes[col]
             if isinstance(col_datatype, DataType):
                 col_datatype_value = col_datatype.value
             else:
                 col_datatype_value = col_datatype
-                
+
             if col in datatypes and col_datatype_value in [
                 DataType.PRICE.value,
                 DataType.NUMERIC.value,
