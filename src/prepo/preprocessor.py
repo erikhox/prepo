@@ -345,22 +345,20 @@ class FeaturePreProcessor:
             return
 
         for col in df.columns:
-            if any(word in col.lower() for word in ["id", "tag", "identification", "item"]):
+            # Skip ID columns
+            if any(word in col.lower() for word in ["id", "identification", "item"]):
                 continue
 
             # Handle both enum and string datatypes
             col_datatype = datatypes[col]
-            if isinstance(col_datatype, DataType):
+            if hasattr(col_datatype, "value"):  # It's an enum object
                 col_datatype_value = col_datatype.value
-            else:
+            else:  # It's already a string
                 col_datatype_value = col_datatype
 
-            if col in datatypes and col_datatype_value in [
-                DataType.PRICE.value,
-                DataType.NUMERIC.value,
-                DataType.PERCENTAGE.value,
-                DataType.INTEGER.value,
-            ]:
+            # Check if column should be scaled
+            scalable_types = ["price", "numeric", "percentage", "integer"]
+            if col_datatype_value in scalable_types:
                 df[col] = scaler_func(df[col])
 
     def process(
