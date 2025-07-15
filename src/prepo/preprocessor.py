@@ -21,7 +21,7 @@ try:
 
     HAS_POLARS = True
 except ImportError:
-    pl = None  # type: ignore
+    pl = None
     HAS_POLARS = False
 
 try:
@@ -29,7 +29,7 @@ try:
 
     HAS_PYARROW = True
 except ImportError:
-    pa = None  # type: ignore
+    pa = None
     HAS_PYARROW = False
 
 
@@ -328,10 +328,13 @@ class FeaturePreProcessor:
         if scaler_func is None:
             return
 
+        if datatypes is None:
+            return
+            
         for col in df.columns:
             if any(word in col.lower() for word in ["id", "tag", "identification", "item"]):
                 continue
-            if datatypes[col] in [self.ENUM.PRICE, self.ENUM.NUMERIC, self.ENUM.PERCENTAGE]:
+            if col in datatypes and datatypes[col] in [self.ENUM.PRICE.value, self.ENUM.NUMERIC.value, self.ENUM.PERCENTAGE.value]:
                 df[col] = scaler_func(df[col])
 
     def process(
@@ -368,7 +371,8 @@ class FeaturePreProcessor:
             clean_df = self.clean_outliers(clean_df, datatypes)
 
         # Scale numeric columns
-        self.scaler(clean_df, scaler_type.value, datatypes)
+        datatypes_str = {k: v.value for k, v in datatypes.items()}
+        self.scaler(clean_df, scaler_type.value, datatypes_str)
 
         clean_df.index = range(len(clean_df))
         return clean_df

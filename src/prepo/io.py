@@ -19,7 +19,7 @@ try:
 
     HAS_POLARS = True
 except ImportError:
-    pl = None  # type: ignore
+    pl = None
     HAS_POLARS = False
 
 try:
@@ -28,8 +28,8 @@ try:
 
     HAS_PYARROW = True
 except ImportError:
-    pa = None  # type: ignore
-    pq = None  # type: ignore
+    pa = None
+    pq = None
     HAS_PYARROW = False
 
 
