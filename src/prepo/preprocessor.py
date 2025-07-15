@@ -56,6 +56,7 @@ class FeaturePreProcessor:
         """
         self.use_polars = use_polars and HAS_POLARS
         self.use_pyarrow = use_pyarrow and HAS_PYARROW
+        self.ENUM = DataType  # Add the ENUM attribute
 
         self.scalers = {
             ScalerType.STANDARD: self._standard_scaler,
@@ -330,7 +331,7 @@ class FeaturePreProcessor:
         for col in df.columns:
             if any(word in col.lower() for word in ["id", "tag", "identification", "item"]):
                 continue
-            if datatypes[col] in [self.ENUM.price, self.ENUM.numeric, self.ENUM.percentage]:
+            if datatypes[col] in [self.ENUM.PRICE, self.ENUM.NUMERIC, self.ENUM.PERCENTAGE]:
                 df[col] = scaler_func(df[col])
 
     def process(

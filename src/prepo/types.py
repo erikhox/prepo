@@ -5,7 +5,7 @@ This module contains type-safe enumerations for data types and scaling methods.
 """
 
 from enum import Enum, auto
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 
 class DataType(Enum):
@@ -59,5 +59,5 @@ class FileFormat(Enum):
 
 # Type aliases for better code readability
 DataTypeDict = Dict[str, DataType]
-ScalerFunction = Union[callable, None]
+ScalerFunction = Union[Callable, None]
 FileData = Union[Dict[str, Any], List[Dict[str, Any]]]
