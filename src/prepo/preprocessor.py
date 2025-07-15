@@ -5,13 +5,15 @@ This module contains the main FeaturePreProcessor class that provides
 methods for cleaning, scaling, and processing pandas DataFrames.
 """
 
-import pandas as pd
+from typing import Dict, List, Optional, Tuple, Union
+
 import numpy as np
+import pandas as pd
 from dateutil.parser import parse
 from scipy.stats import iqr
 from sklearn.impute import KNNImputer
-from typing import Dict, Tuple, Optional, Union, List
-from .types import DataType, ScalerType, DataTypeDict
+
+from .types import DataType, DataTypeDict, ScalerType
 
 # Optional high-performance libraries
 try:

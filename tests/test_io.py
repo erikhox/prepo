@@ -2,12 +2,14 @@
 Tests for the I/O module.
 """
 
-import unittest
-import pandas as pd
-import numpy as np
-import tempfile
 import os
+import tempfile
+import unittest
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
 from src.prepo.io import FileReader, FileWriter
 from src.prepo.types import FileFormat
 
