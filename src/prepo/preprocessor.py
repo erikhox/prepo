@@ -202,14 +202,14 @@ class FeaturePreProcessor:
                 datatypes[col] = DataType.BINARY
 
             # ID columns (check before numeric to catch numeric IDs)
-            elif any(word in col_lower for word in ["id", "tag", "identification", "serial", "key"]):
+            elif any(word in col_lower for word in ["id", "identification", "serial", "key"]):
                 datatypes[col] = DataType.ID
 
-            # percentage - only if values are actually in percentage range
+            # percentage - check both value range and keywords (but prioritize actual value range)
             elif props["is_numeric"] and self._is_percentage_range(series):
                 datatypes[col] = DataType.PERCENTAGE
             elif (
-                any(word in col_lower for word in ["perc", "percentage", "percent", "%"])
+                any(word in col_lower for word in ["perc", "percentage", "percent", "%", "score", "ratio"])
                 and props["is_numeric"]
                 and self._is_percentage_range(series)
             ):
