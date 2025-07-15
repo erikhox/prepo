@@ -18,6 +18,7 @@ from .types import DataType, DataTypeDict, ScalerType
 # Optional high-performance libraries
 try:
     import polars as pl
+
     HAS_POLARS = True
 except ImportError:
     pl = None  # type: ignore
@@ -25,6 +26,7 @@ except ImportError:
 
 try:
     import pyarrow as pa
+
     HAS_PYARROW = True
 except ImportError:
     pa = None  # type: ignore

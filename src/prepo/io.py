@@ -16,6 +16,7 @@ from .types import FileFormat
 # Optional high-performance libraries
 try:
     import polars as pl
+
     HAS_POLARS = True
 except ImportError:
     pl = None  # type: ignore
@@ -24,6 +25,7 @@ except ImportError:
 try:
     import pyarrow as pa
     import pyarrow.parquet as pq
+
     HAS_PYARROW = True
 except ImportError:
     pa = None  # type: ignore
